@@ -33,40 +33,31 @@ app.get('/', (req, res) => {
     const userSecret = req.query.secret;
     const expectedSecret = process.env.SECRET_KEY;
 
-    if (SECRET_KEY === undefined || SECRET_KEY === '') {
+    if (expectedSecret === undefined || expectedSecret === '') {
         return res.send(`
         <html>
-        <head><title>Secret Key Not Set</title></head>
-        <body>
-        <h1>Secret Key Not Set</h1>
-        </body>
+          <head><title>Secret Key Not Set</title></head>
+          <body>
+            <h1>Secret Key Not Set</h1>
+          </body>
         </html>
-        `);
+      `);
     }
 
     if (!userSecret || userSecret !== expectedSecret) {
         // Show input form if no valid secret provided
-        return res.send(` <
-            html >
-            <
-            head > < title > Auth Required < /title></head >
-            <
-            body >
-            <
-            h1 > Enter Secret Key < /h1> <
-            form method = "GET"
-            action = "/" >
-            <
-            input type = "password"
-            name = "secret"
-            placeholder = "Secret key"
-            required / >
-            <
-            button type = "submit" > Submit < /button> <
-            /form> <
-            /body> <
-            /html>
-            `);
+        return res.send(`
+        <html>
+          <head><title>Auth Required</title></head>
+          <body>
+            <h1>Enter Secret Key</h1>
+            <form method="GET" action="/">
+              <input type="password" name="secret" placeholder="Secret key" required />
+              <button type="submit">Submit</button>
+            </form>
+          </body>
+        </html>
+      `);
     }
 
     // If secret matches, show the data table
@@ -76,19 +67,19 @@ app.get('/', (req, res) => {
         }
 
         const tableRows = rows.map(row =>
-            ` < tr > < td > $ { row.id } < /td><td>${row.sensor_id}</td > < td > $ { row.value } < /td><td>${row.timestamp}</td > < /tr>`
+            `<tr><td>${row.id}</td><td>${row.sensor_id}</td><td>${row.value}</td><td>${row.timestamp}</td></tr>`
         ).join('');
 
         const html = `
         <html>
-        <head><title>Sensor Data</title></head>
-        <body>
-          <h1>Latest Sensor Readings</h1>
-          <table border="1" cellpadding="5" cellspacing="0">
-            <tr><th>ID</th><th>Sensor ID</th><th>Value</th><th>Timestamp</th></tr>
-            ${tableRows}
-          </table>
-        </body>
+          <head><title>Sensor Data</title></head>
+          <body>
+            <h1>Latest Sensor Readings</h1>
+            <table border="1" cellpadding="5" cellspacing="0">
+              <tr><th>ID</th><th>Sensor ID</th><th>Value</th><th>Timestamp</th></tr>
+              ${tableRows}
+            </table>
+          </body>
         </html>
       `;
 
