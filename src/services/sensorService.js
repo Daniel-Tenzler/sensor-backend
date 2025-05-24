@@ -2,16 +2,23 @@ import db from '../db/sqlite.js';
 
 export const insertSensorReading = (sensorId, value) => {
     return new Promise((resolve, reject) => {
-        const stmt = db.prepare('INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)');
-        stmt.run(sensorId, value, function(err) {
-            if (err) {
-                stmt.finalize(); // finalize even on error
-                reject(err);
-            } else {
-                stmt.finalize(); // finalize on success
-                resolve({ success: true, id: this.lastID });
+        let stmt;
+        try {
+            stmt = db.prepare('INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)');
+            stmt.run(sensorId, value, function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve({ success: true, id: this.lastID });
+                }
+            });
+        } catch (err) {
+            reject(err);
+        } finally {
+            if (stmt) {
+                stmt.finalize();
             }
-        });
+        }
     });
 };
 
