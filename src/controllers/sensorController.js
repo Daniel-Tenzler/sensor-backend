@@ -104,97 +104,19 @@ export const submitSensorReading = async(req, res) => {
 };
 
 export const getSensorReadings = async(req, res) => {
-        try {
-            // Validate database connection
-            await validateDatabaseConnection();
+    try {
+        const db = await getDatabase();
+        const rows = await db.all('SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 100');
 
-            const db = await getDatabase();
-            const rows = await db.all('SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 100');
-
-            if (!rows) {
-                throw new SensorError('Failed to retrieve sensor readings', 500);
-            }
-
-            const tableRows = rows.map(row => {
-                try {
-                    return `<tr>
-                    <td>${escapeHtml(row.id)}</td>
-                    <td>${escapeHtml(row.sensor_id)}</td>
-                    <td>${escapeHtml(row.value)}</td>
-                    <td>${escapeHtml(row.timestamp)}</td>
-                </tr>`;
-                } catch (error) {
-                    console.error('Error formatting row:', error);
-                    return ''; // Skip problematic rows
-                }
-            }).join('');
-
-            res.send(`
-        <html>
-        <head>
-            <title>Sensor Data</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                table { border-collapse: collapse; width: 100%; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-                tr:nth-child(even) { background-color: #f9f9f9; }
-                tr:hover { background-color: #f5f5f5; }
-            </style>
-        </head>
-        <body>
-            <h1>Latest Sensor Readings</h1>
-            ${rows.length === 0 ? '<p>No sensor readings available</p>' : `
-            <table>
-                <tr>
-                    <th>ID</th>
-                    <th>Sensor ID</th>
-                    <th>Value</th>
-                    <th>Timestamp</th>
-                </tr>
-                ${tableRows}
-            </table>`}
-        </body>
-        </html>
-        `);
-    } catch (error) {
-        console.error('Error retrieving sensor readings:', {
-            error: error.message,
-            stack: error.stack,
-            timestamp: new Date().toISOString()
+        res.json({
+            success: true,
+            data: rows
         });
-
-        if (error instanceof SensorError) {
-            return res.status(error.statusCode).send(`
-                <html>
-                <head><title>Error</title></head>
-                <body>
-                    <h1>Error</h1>
-                    <p>${escapeHtml(error.message)}</p>
-                </body>
-                </html>
-            `);
-        }
-
-        res.status(500).send(`
-            <html>
-            <head><title>Error</title></head>
-            <body>
-                <h1>Internal Server Error</h1>
-                <p>An unexpected error occurred while retrieving sensor readings.</p>
-            </body>
-            </html>
-        `);
+    } catch (error) {
+        console.error('Error retrieving sensor readings:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve sensor readings'
+        });
     }
 };
-
-// Helper function to prevent XSS attacks
-function escapeHtml(unsafe) {
-    if (unsafe === null || unsafe === undefined) return '';
-    return String(unsafe)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}

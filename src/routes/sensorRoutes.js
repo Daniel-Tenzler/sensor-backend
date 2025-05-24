@@ -1,5 +1,5 @@
 import express from 'express';
-import { submitSensorReading, getSensorReadings } from '../controllers/sensorController.js';
+import { submitSensorReading } from '../controllers/sensorController.js';
 import { SECRET_KEY } from '../config/app.js';
 import { verifySecret } from '../utils/auth.js';
 
@@ -15,6 +15,5 @@ const verifySecretMiddleware = (req, res, next) => {
 };
 
 router.post('/submit', verifySecretMiddleware, submitSensorReading);
-router.get('/', getSensorReadings);
 
 export default router;
