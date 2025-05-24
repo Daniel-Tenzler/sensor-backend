@@ -1,15 +1,28 @@
 {
-    "name": "sensor-api",
-    "license": "MIT",
+    "name": "sensor-backend",
     "version": "1.0.0",
-    "main": "index.js",
+    "description": "Backend for collecting sensor data and serving it over a secure API.",
+    "main": "src/app.js",
+    "license": "MIT",
     "type": "module",
     "scripts": {
-        "start": "node index.js"
+        "start": "node src/app.js",
+        "dev": "nodemon src/app.js",
+        "lint": "eslint ."
     },
     "dependencies": {
+        "dotenv": "^16.0.3",
         "express": "^4.18.2",
-        "sensor-api": "file:",
+        "sensor-backend": "file:",
         "sqlite3": "^5.1.6"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.27.0",
+        "eslint": "^9.27.0",
+        "eslint-config-airbnb-base": "^15.0.0",
+        "eslint-plugin-import": "^2.31.0",
+        "globals": "^16.1.0",
+        "nodemon": "^3.1.10",
+        "prettier": "^3.5.3"
     }
 }
