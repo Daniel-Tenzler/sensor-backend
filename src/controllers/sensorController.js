@@ -60,12 +60,22 @@ export const submitSensorReading = async(req, res) => {
 
         // Get database instance and run query
         const db = await getDatabase();
-        const run = promisify(db.run.bind(db));
-        const result = await run('INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)', [sensorId, value]);
 
-        if (!result || !result.lastID) {
+        function runAsync(db, sql, params = []) {
+            return new Promise((resolve, reject) => {
+                db.run(sql, params, function(err) {
+                    if (err) reject(err);
+                    else resolve({ lastID: this.lastID });
+                });
+            });
+        }
+
+        const result = await runAsync(db, 'INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)', [sensorId, value]);
+
+        if (!result.lastID) {
             throw new SensorError('Failed to insert sensor reading', 500);
         }
+
 
         res.json({
             success: true,

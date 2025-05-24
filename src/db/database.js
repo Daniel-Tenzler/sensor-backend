@@ -8,16 +8,24 @@ let db = null;
 let isInitialized = false;
 
 const getDatabasePath = () => {
-    // Use environment variable for database path if available (for cloud environments)
     const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'sensor_data.db');
-
-    // Ensure the directory exists
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
-
     return dbPath;
+};
+
+const openDatabase = (dbPath) => {
+    return new Promise((resolve, reject) => {
+        const database = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(database);
+            }
+        });
+    });
 };
 
 const initializeDatabase = async() => {
@@ -27,27 +35,20 @@ const initializeDatabase = async() => {
         const dbPath = getDatabasePath();
         console.log('Initializing database at:', dbPath);
 
-        // Create database with verbose mode for better error reporting
-        db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-            if (err) {
-                console.error('Error opening database:', err);
-                throw err;
-            }
-        });
+        db = await openDatabase(dbPath);
 
-        // Enable foreign keys and better error handling
-        await promisify(db.run.bind(db))('PRAGMA foreign_keys = ON');
-        await promisify(db.run.bind(db))('PRAGMA journal_mode = WAL');
+        // Promisify run
+        const run = promisify(db.run.bind(db));
 
-        // Create table
-        await promisify(db.run.bind(db))(`
-            CREATE TABLE IF NOT EXISTS sensor_readings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sensor_id TEXT NOT NULL,
-                value REAL NOT NULL,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+        await run('PRAGMA foreign_keys = ON');
+        await run('PRAGMA journal_mode = WAL');
+
+        await run(`CREATE TABLE IF NOT EXISTS sensor_readings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sensor_id TEXT NOT NULL,
+      value REAL NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
 
         isInitialized = true;
         console.log('Database initialized successfully');
@@ -62,7 +63,6 @@ const initializeDatabase = async() => {
     }
 };
 
-// Initialize database and export a function to get the database instance
 const getDatabase = async() => {
     if (!db || !isInitialized) {
         await initializeDatabase();
@@ -70,7 +70,6 @@ const getDatabase = async() => {
     return db;
 };
 
-// Handle process termination
 process.on('SIGINT', async() => {
     if (db) {
         try {
@@ -83,7 +82,6 @@ process.on('SIGINT', async() => {
     process.exit(0);
 });
 
-// Handle uncaught errors
 process.on('uncaughtException', async(error) => {
     console.error('Uncaught Exception:', error);
     if (db) {

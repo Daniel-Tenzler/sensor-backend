@@ -5,8 +5,10 @@ export const insertSensorReading = (sensorId, value) => {
         const stmt = db.prepare('INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)');
         stmt.run(sensorId, value, function(err) {
             if (err) {
+                stmt.finalize(); // finalize even on error
                 reject(err);
             } else {
+                stmt.finalize(); // finalize on success
                 resolve({ success: true, id: this.lastID });
             }
         });
