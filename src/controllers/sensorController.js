@@ -1,4 +1,4 @@
-import db from '../db/database.js';
+import getDatabase from '../db/database.js';
 import { hashSecret } from '../utils/auth.js';
 import { SECRET_KEY } from '../config/app.js';
 import { promisify } from 'util';
@@ -13,19 +13,17 @@ class SensorError extends Error {
 }
 
 // Validate database connection
-const validateDatabaseConnection = () => {
-    if (!db) {
-        throw new SensorError('Database connection not available', 503);
-    }
+const validateDatabaseConnection = async() => {
     try {
+        const db = await getDatabase();
+        if (!db) {
+            throw new SensorError('Database connection not available', 503);
+        }
         // Test the connection with a simple query
-        db.get('SELECT 1', (err) => {
-            if (err) {
-                throw new SensorError('Database connection test failed', 503);
-            }
-        });
+        await promisify(db.get.bind(db))('SELECT 1');
     } catch (error) {
-        throw new SensorError('Database connection test failed' + error, 503);
+        console.error('Database connection test failed:', error);
+        throw new SensorError('Database connection test failed: ' + error.message, 503);
     }
 };
 
@@ -58,9 +56,10 @@ export const submitSensorReading = async(req, res) => {
         validateSensorReading(sensorId, value);
 
         // Validate database connection
-        validateDatabaseConnection();
+        await validateDatabaseConnection();
 
-        // Convert to promise-based query
+        // Get database instance and run query
+        const db = await getDatabase();
         const run = promisify(db.run.bind(db));
         const result = await run('INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)', [sensorId, value]);
 
@@ -97,8 +96,9 @@ export const submitSensorReading = async(req, res) => {
 export const getSensorReadings = async(req, res) => {
         try {
             // Validate database connection
-            validateDatabaseConnection();
+            await validateDatabaseConnection();
 
+            const db = await getDatabase();
             const rows = await db.all('SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 100');
 
             if (!rows) {
