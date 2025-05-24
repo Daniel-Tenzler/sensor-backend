@@ -103,20 +103,78 @@ export const submitSensorReading = async(req, res) => {
     }
 };
 
-export const getSensorReadings = async(req, res) => {
-    try {
-        const db = await getDatabase();
-        const rows = await db.all('SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 100');
+// Helper function to escape HTML (prevents XSS)
+const escapeHtml = (unsafe) => {
+    if (!unsafe) return '';
+    return String(unsafe)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
 
-        res.json({
-            success: true,
-            data: rows
-        });
+export const getSensorReadings = async(req, res) => {
+        try {
+            const db = await getDatabase();
+            const rows = await db.all('SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 100');
+
+            const tableRows = rows.map(row => `
+            <tr>
+                <td>${escapeHtml(row.id)}</td>
+                <td>${escapeHtml(row.sensor_id)}</td>
+                <td>${escapeHtml(row.value)}</td>
+                <td>${escapeHtml(row.timestamp)}</td>
+            </tr>
+        `).join('');
+
+            const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Sensor Readings</title>
+                <style>
+                    body { font-family: sans-serif; margin: 2rem; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { padding: 8px 12px; border: 1px solid #ddd; }
+                    th { background-color: #f4f4f4; }
+                    tr:nth-child(even) { background-color: #f9f9f9; }
+                </style>
+            </head>
+            <body>
+                <h1>Latest Sensor Readings</h1>
+                ${rows.length === 0 ? '<p>No sensor readings available.</p>' : `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Sensor ID</th>
+                                <th>Value</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                `}
+            </body>
+            </html>
+        `;
+
+        res.send(html);
+
     } catch (error) {
         console.error('Error retrieving sensor readings:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to retrieve sensor readings'
-        });
+        res.status(500).send(`
+            <!DOCTYPE html>
+            <html>
+            <head><title>Error</title></head>
+            <body>
+                <h1>Error retrieving sensor readings</h1>
+                <p>${escapeHtml(error.message)}</p>
+            </body>
+            </html>
+        `);
     }
 };
