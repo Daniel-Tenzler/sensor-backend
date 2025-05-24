@@ -116,8 +116,21 @@ const escapeHtml = (unsafe) => {
 
 export const getSensorReadings = async(req, res) => {
         try {
+            // Validate database connection first
+            await validateDatabaseConnection();
+
             const db = await getDatabase();
-            const rows = await db.all('SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 100');
+            if (!db) {
+                throw new SensorError('Database connection not available', 503);
+            }
+
+            // Use promisify for the database query
+            const allAsync = promisify(db.all.bind(db));
+            const rows = await allAsync('SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 100');
+
+            if (!Array.isArray(rows)) {
+                throw new SensorError('Invalid response from database', 500);
+            }
 
             const tableRows = rows.map(row => `
             <tr>
@@ -165,14 +178,32 @@ export const getSensorReadings = async(req, res) => {
         res.send(html);
 
     } catch (error) {
-        console.error('Error retrieving sensor readings:', error);
+        console.error('Error retrieving sensor readings:', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        });
+
+        if (error instanceof SensorError) {
+            return res.status(error.statusCode).send(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>Error</title></head>
+                <body>
+                    <h1>Error retrieving sensor readings</h1>
+                    <p>${escapeHtml(error.message)}</p>
+                </body>
+                </html>
+            `);
+        }
+
         res.status(500).send(`
             <!DOCTYPE html>
             <html>
             <head><title>Error</title></head>
             <body>
                 <h1>Error retrieving sensor readings</h1>
-                <p>${escapeHtml(error.message)}</p>
+                <p>An unexpected error occurred while retrieving sensor readings.</p>
             </body>
             </html>
         `);
