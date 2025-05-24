@@ -46,7 +46,8 @@ const initializeDatabase = async() => {
         await run(`CREATE TABLE IF NOT EXISTS sensor_readings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       sensor_id TEXT NOT NULL,
-      value REAL NOT NULL,
+      humidity REAL,
+      temperature REAL,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 

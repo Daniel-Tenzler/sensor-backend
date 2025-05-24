@@ -28,21 +28,24 @@ const validateDatabaseConnection = async() => {
 };
 
 // Validate sensor reading input
-const validateSensorReading = (sensorId, value) => {
+const validateSensorReading = (sensorId, humidity, temperature) => {
     if (!sensorId || typeof sensorId !== 'string') {
         throw new SensorError('Invalid sensor ID format', 400);
     }
-    if (value === undefined || value === null) {
-        throw new SensorError('Sensor value is required', 400);
+    if (humidity === undefined || humidity === null) {
+        throw new SensorError('Humidity value is required', 400);
     }
-    if (isNaN(Number(value))) {
-        throw new SensorError('Sensor value must be a number', 400);
+    if (temperature === undefined || temperature === null) {
+        throw new SensorError('Temperature value is required', 400);
+    }
+    if (isNaN(Number(humidity)) || isNaN(Number(temperature))) {
+        throw new SensorError('Sensor values must be numbers', 400);
     }
 };
 
 export const submitSensorReading = async(req, res) => {
     try {
-        const { sensorId, value, secret } = req.body;
+        const { sensorId, humidity, temperature, secret } = req.body;
 
         // Verify the secret matches the expected hash
         const expectedHash = hashSecret(SECRET_KEY);
@@ -53,7 +56,7 @@ export const submitSensorReading = async(req, res) => {
         }
 
         // Validate input
-        validateSensorReading(sensorId, value);
+        validateSensorReading(sensorId, humidity, temperature);
 
         // Validate database connection
         await validateDatabaseConnection();
@@ -70,12 +73,11 @@ export const submitSensorReading = async(req, res) => {
             });
         }
 
-        const result = await runAsync(db, 'INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)', [sensorId, value]);
+        const result = await runAsync(db, 'INSERT INTO sensor_readings (sensor_id, humidity, temperature) VALUES (?, ?, ?)', [sensorId, humidity, temperature]);
 
         if (!result.lastID) {
             throw new SensorError('Failed to insert sensor reading', 500);
         }
-
 
         res.json({
             success: true,
@@ -136,7 +138,8 @@ export const getSensorReadings = async(req, res) => {
             <tr>
                 <td>${escapeHtml(row.id)}</td>
                 <td>${escapeHtml(row.sensor_id)}</td>
-                <td>${escapeHtml(row.value)}</td>
+                <td>${escapeHtml(row.humidity)}</td>
+                <td>${escapeHtml(row.temperature)}</td>
                 <td>${escapeHtml(row.timestamp)}</td>
             </tr>
         `).join('');
@@ -162,7 +165,8 @@ export const getSensorReadings = async(req, res) => {
                             <tr>
                                 <th>ID</th>
                                 <th>Sensor ID</th>
-                                <th>Value</th>
+                                <th>Humidity</th>
+                                <th>Temperature</th>
                                 <th>Timestamp</th>
                             </tr>
                         </thead>
