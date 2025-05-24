@@ -1,6 +1,7 @@
 import db from '../db/database.js';
 import { hashSecret } from '../utils/auth.js';
 import { SECRET_KEY } from '../config/app.js';
+import { promisify } from 'util';
 
 // Custom error class for sensor-related errors
 class SensorError extends Error {
@@ -15,6 +16,16 @@ class SensorError extends Error {
 const validateDatabaseConnection = () => {
     if (!db) {
         throw new SensorError('Database connection not available', 503);
+    }
+    try {
+        // Test the connection with a simple query
+        db.get('SELECT 1', (err) => {
+            if (err) {
+                throw new SensorError('Database connection test failed', 503);
+            }
+        });
+    } catch (error) {
+        throw new SensorError('Database connection test failed' + error, 503);
     }
 };
 
@@ -49,8 +60,9 @@ export const submitSensorReading = async(req, res) => {
         // Validate database connection
         validateDatabaseConnection();
 
-        const stmt = db.prepare('INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)');
-        const result = await stmt.run(sensorId, value);
+        // Convert to promise-based query
+        const run = promisify(db.run.bind(db));
+        const result = await run('INSERT INTO sensor_readings (sensor_id, value) VALUES (?, ?)', [sensorId, value]);
 
         if (!result || !result.lastID) {
             throw new SensorError('Failed to insert sensor reading', 500);
