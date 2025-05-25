@@ -1,7 +1,9 @@
-// eslint-disable-next-line no-unused-vars
 import { insertSensorReading } from '../services/sensorService.js';
 
 export const SensorForm = () => {
+    // Make insertSensorReading available globally
+    window.insertSensorReading = insertSensorReading;
+
     return `
         <div class="form-container">
             <h2>Submit New Reading</h2>
