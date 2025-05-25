@@ -22,12 +22,6 @@ export const SensorForm = () => {
         <script>
             document.getElementById('sensorForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
-                
-                const token = sessionStorage.getItem('token');
-                if (!token) {
-                    alert('Please log in first');
-                    return;
-                }
 
                 const formData = {
                     sensorId: document.getElementById('sensorId').value,
