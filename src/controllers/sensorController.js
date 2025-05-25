@@ -2,6 +2,7 @@ import getDatabase from '../db/database.js';
 import { hashSecret } from '../utils/auth.js';
 import { SECRET_KEY } from '../config/app.js';
 import { promisify } from 'util';
+import { SensorForm, sensorFormStyles } from '../components/SensorForm.js';
 
 // Custom error class for sensor-related errors
 class SensorError extends Error {
@@ -151,14 +152,19 @@ export const getSensorReadings = async(req, res) => {
                 <title>Sensor Readings</title>
                 <style>
                     body { font-family: sans-serif; margin: 2rem; }
-                    table { width: 100%; border-collapse: collapse; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
                     th, td { padding: 8px 12px; border: 1px solid #ddd; }
                     th { background-color: #f4f4f4; }
                     tr:nth-child(even) { background-color: #f9f9f9; }
+                    ${sensorFormStyles}
                 </style>
             </head>
             <body>
-                <h1>Latest Sensor Readings</h1>
+                <h1>Sensor Readings Dashboard</h1>
+                
+                ${SensorForm()}
+
+                <h2>Latest Sensor Readings</h2>
                 ${rows.length === 0 ? '<p>No sensor readings available.</p>' : `
                     <table>
                         <thead>
