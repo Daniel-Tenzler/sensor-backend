@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-unused-vars
-import { insertReading } from '../services/supabasePGDB.js';
+import { insertSensorReading } from '../services/sensorService.js';
 
 export const SensorForm = () => {
     return `
@@ -33,7 +33,7 @@ export const SensorForm = () => {
                 };
 
                 try {
-                    const result = await insertReading(
+                    const result = await insertSensorReading(
                         parseInt(formData.sensorId),
                         parseFloat(formData.humidity),
                         parseFloat(formData.temperature)
