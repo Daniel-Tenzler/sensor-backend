@@ -15,6 +15,10 @@ export const SensorForm = () => {
                     <label for="temperature">Temperature:</label>
                     <input type="number" id="temperature" name="temperature" step="0.01" required>
                 </div>
+                <div class="form-group">
+                    <label for="secret">Secret Key:</label>
+                    <input type="password" id="secret" name="secret" required>
+                </div>
                 <button type="submit">Submit Reading</button>
             </form>
         </div>
@@ -32,7 +36,8 @@ export const SensorForm = () => {
                 const formData = {
                     sensorId: document.getElementById('sensorId').value,
                     humidity: document.getElementById('humidity').value,
-                    temperature: document.getElementById('temperature').value
+                    temperature: document.getElementById('temperature').value,
+                    secret: document.getElementById('secret').value
                 };
 
                 try {
