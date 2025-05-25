@@ -11,14 +11,26 @@ const app = express();
 // Session configuration
 app.use(session({
     secret: config.SECRET_KEY,
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     cookie: {
         secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax' // Added sameSite option
+    },
+    name: 'sessionId' // Added explicit session name
 }));
+
+// Add session debugging middleware
+app.use((req, res, next) => {
+    console.log('Session Debug - Request:', {
+        sessionID: req.sessionID,
+        session: req.session,
+        cookies: req.cookies
+    });
+    next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // For parsing form data
