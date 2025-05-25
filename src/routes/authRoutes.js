@@ -24,8 +24,8 @@ router.post('/login', async(req, res) => {
     console.log('Expected secret hash:', expectedSecretHash);
 
     if (userSecretHash === expectedSecretHash) {
-        // Return the secret as a token
-        res.json({ token: userSecret });
+        // Return the hashed secret as the token
+        res.json({ token: userSecretHash });
     } else {
         console.log('Authentication failed - invalid secret');
         res.status(401).json({ error: 'Invalid secret key' });

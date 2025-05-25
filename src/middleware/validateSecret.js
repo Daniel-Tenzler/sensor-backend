@@ -4,10 +4,13 @@ import { sha256 } from '../utils/hash.js';
 export const validateSecret = (req, res, next) => {
     console.log('validateSecret middleware called');
 
-    // Get the secret from Authorization header
+    // Get the secret from Authorization header or query parameter
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        console.log('No Authorization header found');
+    const tokenFromQuery = req.query.token;
+    const userSecret = authHeader ? authHeader.replace('Bearer ', '') : tokenFromQuery;
+
+    if (!userSecret) {
+        console.log('No Authorization header or token found');
 
         // If it's the root route, show the login form
         if (req.path === '/' && req.method === 'GET') {
@@ -30,6 +33,12 @@ export const validateSecret = (req, res, next) => {
                         <button type="submit">Submit</button>
                     </form>
                     <script>
+                        // Check if we have a token and redirect if we do
+                        const token = sessionStorage.getItem('authToken');
+                        if (token) {
+                            window.location.href = '/?token=' + encodeURIComponent(token);
+                        }
+
                         document.getElementById('secretForm').addEventListener('submit', async (e) => {
                             e.preventDefault();
                             const secret = document.getElementById('secretInput').value;
@@ -44,7 +53,7 @@ export const validateSecret = (req, res, next) => {
                                 const data = await response.json();
                                 if (data.token) {
                                     sessionStorage.setItem('authToken', data.token);
-                                    window.location.reload();
+                                    window.location.href = '/?token=' + encodeURIComponent(data.token);
                                 } else {
                                     alert('Invalid secret key');
                                 }
@@ -62,7 +71,6 @@ export const validateSecret = (req, res, next) => {
         return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const userSecret = authHeader.replace('Bearer ', '');
     const expectedSecretHash = sha256(config.SECRET_KEY);
     const userSecretHash = sha256(userSecret);
 
