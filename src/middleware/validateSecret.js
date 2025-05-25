@@ -2,13 +2,18 @@ import config from '../config/index.js';
 import { sha256 } from '../utils/hash.js';
 
 export const validateSecret = (req, res, next) => {
-    const userSecretHash = req.query.secret;
+    // Check if user is already authenticated via session
+    if (req.session && req.session.authenticated) {
+        return next();
+    }
 
     if (!config.SECRET_KEY || config.SECRET_KEY === '') {
         return res.send(`<h1>Secret Key Not Set</h1>`);
     }
 
+    const userSecret = req.body.secret;
     const expectedSecretHash = sha256(config.SECRET_KEY);
+    const userSecretHash = userSecret ? sha256(userSecret) : null;
 
     if (!userSecretHash || userSecretHash !== expectedSecretHash) {
         return res.send(`
@@ -16,35 +21,16 @@ export const validateSecret = (req, res, next) => {
         <head><title>Auth Required</title></head>
         <body>
           <h1>Enter Secret Key</h1>
-          <form id="secretForm" method="GET" action="/">
-            <input type="password" id="secretInput" placeholder="Secret key" required />
-            <input type="hidden" name="secret" id="secretHashed" />
+          <form id="secretForm" method="POST" action="/auth">
+            <input type="password" id="secretInput" name="secret" placeholder="Secret key" required />
             <button type="submit">Submit</button>
           </form>
-  
-          <script>
-            async function sha256(message) {
-              const msgBuffer = new TextEncoder().encode(message);
-              const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-              const hashArray = Array.from(new Uint8Array(hashBuffer));
-              const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-              return hashHex;
-            }
-  
-            const form = document.getElementById('secretForm');
-            form.addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const secret = document.getElementById('secretInput').value;
-              const hashed = await sha256(secret);
-              document.getElementById('secretHashed').value = hashed;
-              document.getElementById('secretInput').value = '';
-              form.submit();
-            });
-          </script>
         </body>
         </html>
       `);
     }
 
+    // Set session after successful authentication
+    req.session.authenticated = true;
     next();
 };

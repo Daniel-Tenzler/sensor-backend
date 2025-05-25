@@ -1,19 +1,10 @@
 import express from 'express';
 import { submitSensorReading } from '../controllers/sensorController.js';
-import { SECRET_KEY } from '../config/app.js';
-import { verifySecret } from '../utils/auth.js';
+import { validateSecret } from '../middleware/validateSecret.js';
 
 const router = express.Router();
 
-// Middleware to verify secret key for POST requests
-const verifySecretMiddleware = (req, res, next) => {
-    const { secret } = req.body;
-    if (!verifySecret(secret, SECRET_KEY)) {
-        return res.status(403).json({ error: 'Unauthorized' });
-    }
-    next();
-};
-
-router.post('/submit', verifySecretMiddleware, submitSensorReading);
+// All sensor routes are protected with session-based authentication
+router.post('/submit', validateSecret, submitSensorReading);
 
 export default router;

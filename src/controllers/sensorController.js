@@ -1,4 +1,4 @@
-import pool from '../db/database.js';
+import { insertSensorReading, getLatestReadings } from '../services/sensorService.js';
 import { hashSecret } from '../utils/auth.js';
 import { SECRET_KEY } from '../config/app.js';
 import { SensorForm, sensorFormStyles } from '../components/SensorForm.js';
@@ -11,17 +11,6 @@ class SensorError extends Error {
         this.statusCode = statusCode;
     }
 }
-
-// Validate database connection
-const validateDatabaseConnection = async() => {
-    try {
-        // Test the connection with a simple query
-        await pool.query('SELECT 1');
-    } catch (error) {
-        console.error('Database connection test failed:', error);
-        throw new SensorError('Database connection test failed: ' + error.message, 503);
-    }
-};
 
 // Validate sensor reading input
 const validateSensorReading = (sensorId, humidity, temperature) => {
@@ -54,24 +43,16 @@ export const submitSensorReading = async(req, res) => {
         // Validate input
         validateSensorReading(sensorId, humidity, temperature);
 
-        // Validate database connection
-        await validateDatabaseConnection();
+        // Insert the reading using the service
+        const result = await insertSensorReading(sensorId, humidity, temperature);
 
-        // Insert the reading
-        const query = `
-            INSERT INTO sensor_readings (sensor_id, humidity, temperature)
-            VALUES ($1, $2, $3)
-            RETURNING *;
-        `;
-        const result = await pool.query(query, [sensorId, humidity, temperature]);
-
-        if (!result.rows[0]) {
+        if (!result.success) {
             throw new SensorError('Failed to insert sensor reading', 500);
         }
 
         res.json({
             success: true,
-            id: result.rows[0].id,
+            id: result.id,
             message: 'Sensor reading recorded successfully'
         });
     } catch (error) {
@@ -108,22 +89,14 @@ const escapeHtml = (unsafe) => {
 
 export const getSensorReadings = async(req, res) => {
         try {
-            // Validate database connection first
-            await validateDatabaseConnection();
+            // Get the readings using the service
+            const readings = await getLatestReadings(100);
 
-            // Get the readings
-            const query = `
-            SELECT * FROM sensor_readings 
-            ORDER BY timestamp DESC 
-            LIMIT 100
-        `;
-            const result = await pool.query(query);
-
-            if (!result.rows) {
+            if (!readings) {
                 throw new SensorError('Invalid response from database', 500);
             }
 
-            const tableRows = result.rows.map(row => `
+            const tableRows = readings.map(row => `
             <tr>
                 <td>${escapeHtml(row.id)}</td>
                 <td>${escapeHtml(row.sensor_id)}</td>
@@ -153,7 +126,7 @@ export const getSensorReadings = async(req, res) => {
                 ${SensorForm()}
 
                 <h2>Latest Sensor Readings</h2>
-                ${result.rows.length === 0 ? '<p>No sensor readings available.</p>' : `
+                ${readings.length === 0 ? '<p>No sensor readings available.</p>' : `
                     <table>
                         <thead>
                             <tr>

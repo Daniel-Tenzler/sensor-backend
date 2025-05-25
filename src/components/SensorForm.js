@@ -1,3 +1,6 @@
+// eslint-disable-next-line no-unused-vars
+import { insertReading } from '../services/supabasePGDB.js';
+
 export const SensorForm = () => {
     return `
         <div class="form-container">
@@ -15,10 +18,6 @@ export const SensorForm = () => {
                     <label for="temperature">Temperature:</label>
                     <input type="number" id="temperature" name="temperature" step="0.01" required>
                 </div>
-                <div class="form-group">
-                    <label for="secret">Secret Key:</label>
-                    <input type="password" id="secret" name="secret" required>
-                </div>
                 <button type="submit">Submit Reading</button>
             </form>
         </div>
@@ -30,26 +29,21 @@ export const SensorForm = () => {
                 const formData = {
                     sensorId: document.getElementById('sensorId').value,
                     humidity: document.getElementById('humidity').value,
-                    temperature: document.getElementById('temperature').value,
-                    secret: document.getElementById('secret').value
+                    temperature: document.getElementById('temperature').value
                 };
 
                 try {
-                    const response = await fetch('/api/sensor/reading', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
-                    });
+                    const result = await insertReading(
+                        parseInt(formData.sensorId),
+                        parseFloat(formData.humidity),
+                        parseFloat(formData.temperature)
+                    );
 
-                    const result = await response.json();
-
-                    if (response.ok) {
+                    if (result) {
                         alert('Reading submitted successfully!');
                         window.location.reload();
                     } else {
-                        alert('Error: ' + (result.error || 'Failed to submit reading'));
+                        alert('Error: Failed to submit reading');
                     }
                 } catch (error) {
                     alert('Error submitting reading: ' + error.message);
