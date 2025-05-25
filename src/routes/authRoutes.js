@@ -7,15 +7,14 @@ import config from '../config/index.js';
 const router = express.Router();
 
 // Authentication endpoint
-router.post('/', async(req, res) => {
-    console.log('POST / called');
+router.post('/login', async(req, res) => {
+    console.log('POST /login called');
     console.log('Request body:', req.body);
-    console.log('Current session:', req.session);
 
     const userSecret = req.body.secret;
     if (!userSecret) {
         console.log('No secret provided');
-        return res.redirect('/');
+        return res.status(400).json({ error: 'Secret key is required' });
     }
 
     const expectedSecretHash = sha256(config.SECRET_KEY);
@@ -25,44 +24,20 @@ router.post('/', async(req, res) => {
     console.log('Expected secret hash:', expectedSecretHash);
 
     if (userSecretHash === expectedSecretHash) {
-        // Set session and ensure it's saved
-        req.session.authenticated = true;
-        req.session.userSecret = userSecretHash; // Store the hash for verification
-
-        // Force session save
-        req.session.save((err) => {
-            if (err) {
-                console.error('Session save error:', err);
-                return res.status(500).send('Authentication failed');
-            }
-            console.log('Session saved successfully:', req.session);
-            // Set a cookie to help with debugging
-            res.cookie('auth_debug', 'true', { httpOnly: true });
-            res.redirect('/');
-        });
+        // Return the secret as a token
+        res.json({ token: userSecret });
     } else {
         console.log('Authentication failed - invalid secret');
-        res.redirect('/');
+        res.status(401).json({ error: 'Invalid secret key' });
     }
 });
 
 // Protected route for getting sensor readings
 router.get('/', validateSecret, getSensorReadings);
 
-// Logout endpoint
+// Logout endpoint (client-side only, just needs to clear sessionStorage)
 router.post('/logout', (req, res) => {
-    console.log('POST /logout called');
-    console.log('Session before logout:', req.session);
-    req.session.destroy((err) => {
-        if (err) {
-            console.error('Logout error:', err);
-            return res.status(500).json({ error: 'Could not log out' });
-        }
-        console.log('Session destroyed.');
-        res.clearCookie('sessionId');
-        res.clearCookie('auth_debug');
-        res.redirect('/');
-    });
+    res.json({ message: 'Logged out successfully' });
 });
 
 export default router;
