@@ -21,7 +21,7 @@ export const validateSecret = (req, res, next) => {
         <head><title>Auth Required</title></head>
         <body>
           <h1>Enter Secret Key</h1>
-          <form id="secretForm" method="POST" action="/auth">
+          <form id="secretForm" method="POST" action="/">
             <input type="password" id="secretInput" name="secret" placeholder="Secret key" required />
             <button type="submit">Submit</button>
           </form>
