@@ -71,7 +71,7 @@ export const submitSensorReading = async(req, res) => {
 
         res.status(500).json({
             error: 'Internal server error',
-            message: 'An unexpected error occurred while processing the sensor reading'
+            message: 'An unexpected error occurred while processing the sensor reading: ' + error.message
         });
     }
 };
