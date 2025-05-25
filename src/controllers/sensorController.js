@@ -1,7 +1,6 @@
-import getDatabase from '../db/database.js';
+import pool from '../db/database.js';
 import { hashSecret } from '../utils/auth.js';
 import { SECRET_KEY } from '../config/app.js';
-import { promisify } from 'util';
 import { SensorForm, sensorFormStyles } from '../components/SensorForm.js';
 
 // Custom error class for sensor-related errors
@@ -16,12 +15,8 @@ class SensorError extends Error {
 // Validate database connection
 const validateDatabaseConnection = async() => {
     try {
-        const db = await getDatabase();
-        if (!db) {
-            throw new SensorError('Database connection not available', 503);
-        }
         // Test the connection with a simple query
-        await promisify(db.get.bind(db))('SELECT 1');
+        await pool.query('SELECT 1');
     } catch (error) {
         console.error('Database connection test failed:', error);
         throw new SensorError('Database connection test failed: ' + error.message, 503);
@@ -62,27 +57,21 @@ export const submitSensorReading = async(req, res) => {
         // Validate database connection
         await validateDatabaseConnection();
 
-        // Get database instance and run query
-        const db = await getDatabase();
+        // Insert the reading
+        const query = `
+            INSERT INTO sensor_readings (sensor_id, humidity, temperature)
+            VALUES ($1, $2, $3)
+            RETURNING *;
+        `;
+        const result = await pool.query(query, [sensorId, humidity, temperature]);
 
-        function runAsync(db, sql, params = []) {
-            return new Promise((resolve, reject) => {
-                db.run(sql, params, function(err) {
-                    if (err) reject(err);
-                    else resolve({ lastID: this.lastID });
-                });
-            });
-        }
-
-        const result = await runAsync(db, 'INSERT INTO sensor_readings (sensor_id, humidity, temperature) VALUES (?, ?, ?)', [sensorId, humidity, temperature]);
-
-        if (!result.lastID) {
+        if (!result.rows[0]) {
             throw new SensorError('Failed to insert sensor reading', 500);
         }
 
         res.json({
             success: true,
-            id: result.lastID,
+            id: result.rows[0].id,
             message: 'Sensor reading recorded successfully'
         });
     } catch (error) {
@@ -122,20 +111,19 @@ export const getSensorReadings = async(req, res) => {
             // Validate database connection first
             await validateDatabaseConnection();
 
-            const db = await getDatabase();
-            if (!db) {
-                throw new SensorError('Database connection not available', 503);
-            }
+            // Get the readings
+            const query = `
+            SELECT * FROM sensor_readings 
+            ORDER BY timestamp DESC 
+            LIMIT 100
+        `;
+            const result = await pool.query(query);
 
-            // Use promisify for the database query
-            const allAsync = promisify(db.all.bind(db));
-            const rows = await allAsync('SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 100');
-
-            if (!Array.isArray(rows)) {
+            if (!result.rows) {
                 throw new SensorError('Invalid response from database', 500);
             }
 
-            const tableRows = rows.map(row => `
+            const tableRows = result.rows.map(row => `
             <tr>
                 <td>${escapeHtml(row.id)}</td>
                 <td>${escapeHtml(row.sensor_id)}</td>
@@ -165,7 +153,7 @@ export const getSensorReadings = async(req, res) => {
                 ${SensorForm()}
 
                 <h2>Latest Sensor Readings</h2>
-                ${rows.length === 0 ? '<p>No sensor readings available.</p>' : `
+                ${result.rows.length === 0 ? '<p>No sensor readings available.</p>' : `
                     <table>
                         <thead>
                             <tr>
