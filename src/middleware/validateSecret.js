@@ -1,5 +1,4 @@
 import config from '../config/index.js';
-import { sha256 } from '../utils/hash.js';
 
 export const validateSecret = (req, res, next) => {
     // Check if user is already authenticated via session
@@ -11,12 +10,8 @@ export const validateSecret = (req, res, next) => {
         return res.send(`<h1>Secret Key Not Set</h1>`);
     }
 
-    const userSecret = req.body.secret;
-    const expectedSecretHash = sha256(config.SECRET_KEY);
-    const userSecretHash = userSecret ? sha256(userSecret) : null;
-
-    if (!userSecretHash || userSecretHash !== expectedSecretHash) {
-        return res.send(`
+    // If not authenticated, show the login form
+    return res.send(`
         <html>
         <head><title>Auth Required</title></head>
         <body>
@@ -28,9 +23,4 @@ export const validateSecret = (req, res, next) => {
         </body>
         </html>
       `);
-    }
-
-    // Set session after successful authentication
-    req.session.authenticated = true;
-    next();
 };

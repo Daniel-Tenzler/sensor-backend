@@ -1,13 +1,23 @@
 import express from 'express';
 import { getSensorReadings } from '../controllers/sensorController.js';
 import { validateSecret } from '../middleware/validateSecret.js';
+import { sha256 } from '../utils/hash.js';
+import config from '../config/index.js';
 
 const router = express.Router();
 
 // Authentication endpoint
-router.post('/', validateSecret, (req, res) => {
-    // If we get here, authentication was successful (handled by validateSecret)
-    res.redirect('/');
+router.post('/', (req, res) => {
+    const userSecret = req.body.secret;
+    const expectedSecretHash = sha256(config.SECRET_KEY);
+    const userSecretHash = userSecret ? sha256(userSecret) : null;
+
+    if (userSecretHash === expectedSecretHash) {
+        req.session.authenticated = true;
+        res.redirect('/');
+    } else {
+        res.redirect('/');
+    }
 });
 
 // Protected route for getting sensor readings
