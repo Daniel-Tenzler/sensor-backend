@@ -1,13 +1,8 @@
-import { insertSensorReading } from '../services/sensorService.js';
-
 export const SensorForm = () => {
-    // Make insertSensorReading available globally
-    window.insertSensorReading = insertSensorReading;
-
     return `
         <div class="form-container">
             <h2>Submit New Reading</h2>
-            <form id="sensorForm" onsubmit="submitReading(event)">
+            <form id="sensorForm">
                 <div class="form-group">
                     <label for="sensorId">Sensor ID:</label>
                     <input type="number" id="sensorId" name="sensorId" required>
@@ -25,9 +20,15 @@ export const SensorForm = () => {
         </div>
 
         <script>
-            async function submitReading(event) {
+            document.getElementById('sensorForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
                 
+                const token = sessionStorage.getItem('token');
+                if (!token) {
+                    alert('Please log in first');
+                    return;
+                }
+
                 const formData = {
                     sensorId: document.getElementById('sensorId').value,
                     humidity: document.getElementById('humidity').value,
@@ -35,22 +36,26 @@ export const SensorForm = () => {
                 };
 
                 try {
-                    const result = await insertSensorReading(
-                        parseInt(formData.sensorId),
-                        parseFloat(formData.humidity),
-                        parseFloat(formData.temperature)
-                    );
+                    const response = await fetch('/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify(formData)
+                    });
 
-                    if (result) {
+                    if (response.ok) {
                         alert('Reading submitted successfully!');
                         window.location.reload();
                     } else {
-                        alert('Error: Failed to submit reading');
+                        const error = await response.json();
+                        alert('Error: ' + (error.message || 'Failed to submit reading'));
                     }
                 } catch (error) {
                     alert('Error submitting reading: ' + error.message);
                 }
-            }
+            });
         </script>
     `;
 };
