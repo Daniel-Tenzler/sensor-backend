@@ -12,6 +12,9 @@ const app = express();
 // Security headers middleware
 app.use(securityHeaders());
 
+// trust first proxy (Render)
+app.set('trust proxy', 1); 
+
 // Favicon middleware
 app.use(serveFavicon());
 

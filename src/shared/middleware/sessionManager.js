@@ -21,7 +21,7 @@ class SessionManager {
       name: 'sensor.session',
       cookie: {
         httpOnly: true,
-        secure: false,
+        secure: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'strict'
       },
