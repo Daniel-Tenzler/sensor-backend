@@ -6,6 +6,7 @@ import {
   FRONTEND_ERROR_TYPES,
   escapeHtml 
 } from '../utils/errorHandler.js';
+import { sessionConfig } from '../../config/session.js';
 
 
 
@@ -19,23 +20,22 @@ import {
  */
 async function authenticateUser(secret, req) {
   try {
-    // For now, we'll use a simple hardcoded authentication
-    // In a real application, this would validate against a user database
-    if (secret && secret.trim() !== '') {
-      // Create session for authenticated user
-      const userId = 'sensor-user';
-      const sessionId = await sessionManager.createSession(userId, req);
-      return {
-        success: true,
-        message: 'Login successful',
-        sessionId
-      };
-    } else {
+    // Validate secret against SESSION_SECRET from environment
+    if (!secret || secret.trim() !== sessionConfig.secret) {
       return {
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid credentials provided'
       };
     }
+
+    // Create session for authenticated user
+    const userId = 'sensor-user';
+    const sessionId = await sessionManager.createSession(userId, req);
+    return {
+      success: true,
+      message: 'Login successful',
+      sessionId
+    };
   } catch (error) {
     console.error('Authentication error:', error);
     return {

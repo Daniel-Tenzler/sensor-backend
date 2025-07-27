@@ -14,15 +14,9 @@ import sessionManager from '../../shared/middleware/sessionManager.js';
  */
 export const authenticateFrontend = async (req, res, next) => {
   try {
-    console.log('Frontend auth check for:', req.originalUrl);
-    console.log('Session ID from cookie:', req.sessionID);
-    console.log('Session data:', req.session);
-    
     const sessionData = await sessionManager.validateSession(req);
-    console.log('Session validation result:', sessionData);
     
     if (!sessionData) {
-      console.log('No valid session, redirecting to login');
       // Redirect to login page with return URL
       const returnUrl = encodeURIComponent(req.originalUrl);
       return res.redirect(`/login?returnUrl=${returnUrl}`);

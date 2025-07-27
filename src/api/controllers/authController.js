@@ -47,18 +47,7 @@ export const login = async (req, res) => {
     // Create session for authenticated user
     // Using a generic user ID since we only have secret-based auth
     const userId = 'sensor-user';
-    console.log('Creating session for user:', userId);
     const sessionId = await sessionManager.createSession(userId, req);
-    console.log('Session created with ID:', sessionId);
-    console.log('Session data:', req.session);
-
-    // Ensure session is saved before responding
-    await new Promise((resolve, reject) => {
-      req.session.save((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // Return success response
     res.status(200).json({
