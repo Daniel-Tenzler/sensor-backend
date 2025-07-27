@@ -66,17 +66,8 @@ describe('API Sensor Controller', () => {
         temperature: 22.3
       };
 
-      await submitSensorReading(req, res);
-
+      await expect(submitSensorReading(req, res)).rejects.toThrow('Invalid sensor ID format');
       expect(insertSensorReading).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Invalid sensor ID format',
-        code: 'SENSOR_ERROR',
-        message: 'Invalid sensor ID format',
-        timestamp: expect.any(String)
-      });
     });
 
     it('should reject reading with empty sensor ID', async () => {
@@ -86,17 +77,8 @@ describe('API Sensor Controller', () => {
         temperature: 22.3
       };
 
-      await submitSensorReading(req, res);
-
+      await expect(submitSensorReading(req, res)).rejects.toThrow('Sensor ID cannot be empty');
       expect(insertSensorReading).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Sensor ID cannot be empty',
-        code: 'SENSOR_ERROR',
-        message: 'Sensor ID cannot be empty',
-        timestamp: expect.any(String)
-      });
     });
 
     it('should reject reading with missing humidity', async () => {
@@ -105,17 +87,8 @@ describe('API Sensor Controller', () => {
         temperature: 22.3
       };
 
-      await submitSensorReading(req, res);
-
+      await expect(submitSensorReading(req, res)).rejects.toThrow('Humidity value is required');
       expect(insertSensorReading).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Humidity value is required',
-        code: 'SENSOR_ERROR',
-        message: 'Humidity value is required',
-        timestamp: expect.any(String)
-      });
     });
 
     it('should reject reading with invalid humidity range', async () => {
@@ -125,17 +98,8 @@ describe('API Sensor Controller', () => {
         temperature: 22.3
       };
 
-      await submitSensorReading(req, res);
-
+      await expect(submitSensorReading(req, res)).rejects.toThrow('Humidity must be between 0 and 100');
       expect(insertSensorReading).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Humidity must be between 0 and 100',
-        code: 'SENSOR_ERROR',
-        message: 'Humidity must be between 0 and 100',
-        timestamp: expect.any(String)
-      });
     });
 
     it('should reject reading with invalid temperature range', async () => {
@@ -145,17 +109,8 @@ describe('API Sensor Controller', () => {
         temperature: 150
       };
 
-      await submitSensorReading(req, res);
-
+      await expect(submitSensorReading(req, res)).rejects.toThrow('Temperature must be between -50 and 100 degrees');
       expect(insertSensorReading).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Temperature must be between -50 and 100 degrees',
-        code: 'SENSOR_ERROR',
-        message: 'Temperature must be between -50 and 100 degrees',
-        timestamp: expect.any(String)
-      });
     });
 
     it('should reject reading with non-numeric values', async () => {
@@ -165,17 +120,8 @@ describe('API Sensor Controller', () => {
         temperature: 22.3
       };
 
-      await submitSensorReading(req, res);
-
+      await expect(submitSensorReading(req, res)).rejects.toThrow('Sensor values must be valid numbers');
       expect(insertSensorReading).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Sensor values must be valid numbers',
-        code: 'SENSOR_ERROR',
-        message: 'Sensor values must be valid numbers',
-        timestamp: expect.any(String)
-      });
     });
 
     it('should handle database insertion failure', async () => {
@@ -189,16 +135,7 @@ describe('API Sensor Controller', () => {
         success: false
       });
 
-      await submitSensorReading(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Failed to insert sensor reading',
-        code: 'SENSOR_ERROR',
-        message: 'Failed to insert sensor reading',
-        timestamp: expect.any(String)
-      });
+      await expect(submitSensorReading(req, res)).rejects.toThrow('Failed to insert sensor reading');
     });
 
     it('should handle database errors', async () => {
@@ -210,16 +147,7 @@ describe('API Sensor Controller', () => {
       
       insertSensorReading.mockRejectedValue(new Error('database connection failed'));
 
-      await submitSensorReading(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Database error',
-        code: 'DATABASE_ERROR',
-        message: 'Failed to save sensor reading to database',
-        timestamp: expect.any(String)
-      });
+      await expect(submitSensorReading(req, res)).rejects.toThrow('database connection failed');
     });
   });
 
@@ -289,47 +217,20 @@ describe('API Sensor Controller', () => {
     it('should reject invalid limit parameter', async () => {
       req.query.limit = '2000'; // Above max limit
 
-      await getSensorReadingsAPI(req, res);
-
+      await expect(getSensorReadingsAPI(req, res)).rejects.toThrow('Limit must be between 1 and 1000');
       expect(getLatestReadings).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Invalid limit parameter',
-        code: 'VALIDATION_ERROR',
-        message: 'Limit must be between 1 and 1000',
-        timestamp: expect.any(String)
-      });
     });
 
     it('should handle database errors', async () => {
       getLatestReadings.mockRejectedValue(new Error('database query failed'));
 
-      await getSensorReadingsAPI(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Database error',
-        code: 'DATABASE_ERROR',
-        message: 'Failed to retrieve sensor readings from database',
-        timestamp: expect.any(String)
-      });
+      await expect(getSensorReadingsAPI(req, res)).rejects.toThrow('database query failed');
     });
 
     it('should handle null response from database', async () => {
       getLatestReadings.mockResolvedValue(null);
 
-      await getSensorReadingsAPI(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Invalid response from database',
-        code: 'SENSOR_ERROR',
-        message: 'Invalid response from database',
-        timestamp: expect.any(String)
-      });
+      await expect(getSensorReadingsAPI(req, res)).rejects.toThrow('Invalid response from database');
     });
   });
 
@@ -392,17 +293,8 @@ describe('API Sensor Controller', () => {
     it('should handle missing sensor ID parameter', async () => {
       req.params = {}; // No sensorId
 
-      await getSensorStats(req, res);
-
+      await expect(getSensorStats(req, res)).rejects.toThrow('Sensor ID parameter is required');
       expect(getLatestReadings).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Sensor ID is required',
-        code: 'VALIDATION_ERROR',
-        message: 'Sensor ID parameter is required',
-        timestamp: expect.any(String)
-      });
     });
 
     it('should handle sensor with no readings', async () => {
@@ -418,16 +310,7 @@ describe('API Sensor Controller', () => {
         }
       ]);
 
-      await getSensorStats(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'No readings found',
-        code: 'NOT_FOUND',
-        message: 'No readings found for sensor nonexistent-sensor',
-        timestamp: expect.any(String)
-      });
+      await expect(getSensorStats(req, res)).rejects.toThrow('No readings found for sensor nonexistent-sensor');
     });
 
     it('should handle database errors', async () => {
@@ -435,16 +318,7 @@ describe('API Sensor Controller', () => {
       
       getLatestReadings.mockRejectedValue(new Error('Database connection failed'));
 
-      await getSensorStats(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Internal server error',
-        code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred while retrieving sensor statistics',
-        timestamp: expect.any(String)
-      });
+      await expect(getSensorStats(req, res)).rejects.toThrow('Database connection failed');
     });
   });
 });

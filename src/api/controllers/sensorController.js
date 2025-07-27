@@ -1,5 +1,10 @@
 import { insertSensorReading, getLatestReadings } from '../../services/sensorService.js';
-import { createAPIError } from '../middleware/apiAuth.js';
+import { 
+  SensorError, 
+  ValidationError, 
+  DatabaseError,
+  NotFoundError,
+} from '../utils/errorHandler.js';
 
 /**
  * API Sensor Controller
@@ -7,45 +12,37 @@ import { createAPIError } from '../middleware/apiAuth.js';
  */
 
 /**
- * Custom error class for sensor-related errors
- */
-class SensorError extends Error {
-  constructor(message, statusCode = 500) {
-    super(message);
-    this.name = 'SensorError';
-    this.statusCode = statusCode;
-  }
-}
-
-/**
  * Validate sensor reading input
  * @param {string} sensorId - Sensor identifier
  * @param {number} humidity - Humidity value
  * @param {number} temperature - Temperature value
- * @throws {SensorError} If validation fails
+ * @throws {ValidationError|SensorError} If validation fails
  */
 const validateSensorReading = (sensorId, humidity, temperature) => {
   if (!sensorId || typeof sensorId !== 'string') {
-    throw new SensorError('Invalid sensor ID format', 400);
+    throw new ValidationError('Invalid sensor ID format', { field: 'sensorId', type: 'string' });
   }
   
   if (sensorId.trim().length === 0) {
-    throw new SensorError('Sensor ID cannot be empty', 400);
+    throw new ValidationError('Sensor ID cannot be empty', { field: 'sensorId' });
   }
   
   if (humidity === undefined || humidity === null) {
-    throw new SensorError('Humidity value is required', 400);
+    throw new ValidationError('Humidity value is required', { field: 'humidity' });
   }
   
   if (temperature === undefined || temperature === null) {
-    throw new SensorError('Temperature value is required', 400);
+    throw new ValidationError('Temperature value is required', { field: 'temperature' });
   }
   
   const humidityNum = Number(humidity);
   const temperatureNum = Number(temperature);
   
   if (isNaN(humidityNum) || isNaN(temperatureNum)) {
-    throw new SensorError('Sensor values must be valid numbers', 400);
+    throw new ValidationError('Sensor values must be valid numbers', { 
+      fields: ['humidity', 'temperature'],
+      provided: { humidity, temperature }
+    });
   }
   
   // Additional validation for reasonable ranges
@@ -78,7 +75,7 @@ export const submitSensorReading = async (req, res) => {
     const result = await insertSensorReading(sensorId, humidityNum, temperatureNum);
 
     if (!result.success) {
-      throw new SensorError('Failed to insert sensor reading', 500);
+      throw new DatabaseError('Failed to insert sensor reading');
     }
 
     res.status(201).json({
@@ -101,35 +98,8 @@ export const submitSensorReading = async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    if (error instanceof SensorError) {
-      return res.status(error.statusCode).json({
-        success: false,
-        error: error.message,
-        code: 'SENSOR_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Handle database errors
-    if (error.message.includes('database') || error.message.includes('query')) {
-      return res.status(500).json({
-        success: false,
-        error: 'Database error',
-        code: 'DATABASE_ERROR',
-        message: 'Failed to save sensor reading to database',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Generic server error
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'An unexpected error occurred while processing the sensor reading',
-      timestamp: new Date().toISOString()
-    });
+    // Let the error middleware handle the error
+    throw error;
   }
 };
 
@@ -145,12 +115,10 @@ export const getSensorReadingsAPI = async (req, res) => {
     
     // Validate limit
     if (limit < 1 || limit > 1000) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid limit parameter',
-        code: 'VALIDATION_ERROR',
-        message: 'Limit must be between 1 and 1000',
-        timestamp: new Date().toISOString()
+      throw new ValidationError('Limit must be between 1 and 1000', { 
+        field: 'limit', 
+        value: limit, 
+        range: { min: 1, max: 1000 } 
       });
     }
 
@@ -158,7 +126,7 @@ export const getSensorReadingsAPI = async (req, res) => {
     const readings = await getLatestReadings(limit);
 
     if (!readings) {
-      throw new SensorError('Invalid response from database', 500);
+      throw new DatabaseError('Invalid response from database');
     }
 
     // Format the response
@@ -188,35 +156,8 @@ export const getSensorReadingsAPI = async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    if (error instanceof SensorError) {
-      return res.status(error.statusCode).json({
-        success: false,
-        error: error.message,
-        code: 'SENSOR_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Handle database errors
-    if (error.message.includes('database') || error.message.includes('query')) {
-      return res.status(500).json({
-        success: false,
-        error: 'Database error',
-        code: 'DATABASE_ERROR',
-        message: 'Failed to retrieve sensor readings from database',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Generic server error
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'An unexpected error occurred while retrieving sensor readings',
-      timestamp: new Date().toISOString()
-    });
+    // Let the error middleware handle the error
+    throw error;
   }
 };
 
@@ -231,13 +172,7 @@ export const getSensorStats = async (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
 
     if (!sensorId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Sensor ID is required',
-        code: 'VALIDATION_ERROR',
-        message: 'Sensor ID parameter is required',
-        timestamp: new Date().toISOString()
-      });
+      throw new ValidationError('Sensor ID parameter is required', { field: 'sensorId' });
     }
 
     // Get readings for specific sensor
@@ -247,13 +182,7 @@ export const getSensorStats = async (req, res) => {
       .slice(0, limit);
 
     if (sensorReadings.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'No readings found',
-        code: 'NOT_FOUND',
-        message: `No readings found for sensor ${sensorId}`,
-        timestamp: new Date().toISOString()
-      });
+      throw new NotFoundError(`No readings found for sensor ${sensorId}`);
     }
 
     // Calculate statistics
@@ -291,13 +220,8 @@ export const getSensorStats = async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: 'An unexpected error occurred while retrieving sensor statistics',
-      timestamp: new Date().toISOString()
-    });
+    // Let the error middleware handle the error
+    throw error;
   }
 };
 

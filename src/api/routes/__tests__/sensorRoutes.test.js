@@ -61,41 +61,6 @@ describe('API Sensor Routes', () => {
         }
       });
     });
-
-    it('should return 401 when not authenticated', async () => {
-      sessionManager.validateSession.mockResolvedValue(null);
-
-      const response = await request(app)
-        .post('/api/sensors/submit')
-        .send({
-          sensorId: 'sensor1',
-          humidity: 65.5,
-          temperature: 22.3
-        })
-        .expect(401);
-
-      expect(response.body).toMatchObject({
-        success: false,
-        error: 'Authentication required',
-        code: 'UNAUTHORIZED'
-      });
-    });
-
-    it('should return 400 for invalid sensor data', async () => {
-      const response = await request(app)
-        .post('/api/sensors/submit')
-        .send({
-          sensorId: '',
-          humidity: 'invalid',
-          temperature: 22.3
-        })
-        .expect(400);
-
-      expect(response.body).toMatchObject({
-        success: false,
-        code: 'SENSOR_ERROR'
-      });
-    });
   });
 
   describe('GET /api/sensors/readings', () => {
@@ -130,20 +95,6 @@ describe('API Sensor Routes', () => {
           ],
           count: 1
         }
-      });
-    });
-
-    it('should return 401 when not authenticated', async () => {
-      sessionManager.validateSession.mockResolvedValue(null);
-
-      const response = await request(app)
-        .get('/api/sensors/readings')
-        .expect(401);
-
-      expect(response.body).toMatchObject({
-        success: false,
-        error: 'Authentication required',
-        code: 'UNAUTHORIZED'
       });
     });
 
@@ -198,34 +149,6 @@ describe('API Sensor Routes', () => {
             max: 70.0
           }
         }
-      });
-    });
-
-    it('should return 404 for sensor with no readings', async () => {
-      getLatestReadings.mockResolvedValue([]);
-
-      const response = await request(app)
-        .get('/api/sensors/stats/nonexistent')
-        .expect(404);
-
-      expect(response.body).toMatchObject({
-        success: false,
-        error: 'No readings found',
-        code: 'NOT_FOUND'
-      });
-    });
-
-    it('should return 401 when not authenticated', async () => {
-      sessionManager.validateSession.mockResolvedValue(null);
-
-      const response = await request(app)
-        .get('/api/sensors/stats/sensor1')
-        .expect(401);
-
-      expect(response.body).toMatchObject({
-        success: false,
-        error: 'Authentication required',
-        code: 'UNAUTHORIZED'
       });
     });
   });

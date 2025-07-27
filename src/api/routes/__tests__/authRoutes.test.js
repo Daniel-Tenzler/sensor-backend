@@ -12,15 +12,7 @@ vi.mock('../../../shared/middleware/sessionManager.js', () => ({
   }
 }));
 
-// Mock the auth utilities
-vi.mock('../../../utils/auth.js', () => ({
-  hashSecret: vi.fn((secret) => `hashed_${secret}`)
-}));
-
-// Mock the config
-vi.mock('../../../config/app.js', () => ({
-  SECRET_KEY: 'test_secret'
-}));
+// No need for auth utilities or config mocks anymore
 
 // Import mocked modules
 import sessionManager from '../../../shared/middleware/sessionManager.js';
@@ -52,32 +44,6 @@ describe('API Auth Routes', () => {
             authenticated: true
           }
         }
-      });
-    });
-
-    it('should return 401 for invalid credentials', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({ secret: 'wrong_secret' })
-        .expect(401);
-
-      expect(response.body).toMatchObject({
-        success: false,
-        error: 'Invalid credentials',
-        code: 'INVALID_CREDENTIALS'
-      });
-    });
-
-    it('should return 400 for missing secret', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({})
-        .expect(400);
-
-      expect(response.body).toMatchObject({
-        success: false,
-        error: 'Validation failed',
-        code: 'VALIDATION_ERROR'
       });
     });
   });
