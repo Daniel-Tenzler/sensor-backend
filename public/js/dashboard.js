@@ -3,7 +3,7 @@
  * Handles dynamic data loading, form submission, and user interactions
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // DOM elements
     const sensorForm = document.getElementById('sensorForm');
     const submitMessage = document.getElementById('submitMessage');
@@ -16,9 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize dashboard
     init();
 
-    /**
-     * Initialize dashboard functionality
-     */
     function init() {
         // Load initial readings
         loadReadings();
@@ -27,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setupEventListeners();
 
         // Set up auto-refresh (every 30 seconds)
-        setInterval(loadReadings, 30000);
+        // setInterval(loadReadings, 30000);
     }
 
     /**
@@ -48,11 +45,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Form input validation
-        const inputs = sensorForm.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.addEventListener('blur', validateInput);
-            input.addEventListener('input', clearInputError);
-        });
+        // const inputs = sensorForm.querySelectorAll('input');
+        // inputs.forEach(input => {
+        //    input.addEventListener('blur', validateInput);
+        //    input.addEventListener('input', clearInputError);
+        //});
     }
 
     /**
@@ -126,10 +123,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const result = await response.json();
 
+            // Handle different possible response structures
+            let readings = null;
             if (result.success && result.data) {
-                displayReadings(result.data);
+                if (Array.isArray(result.data)) {
+                    readings = result.data;
+                } else if (result.data.readings && Array.isArray(result.data.readings)) {
+                    readings = result.data.readings;
+                } else {
+                    throw new Error('Invalid response format: expected array of readings');
+                }
             } else {
                 throw new Error(result.error || 'Failed to load readings');
+            }
+
+            if (readings) {
+                displayReadings(readings);
+            } else {
+                throw new Error('No readings data received');
             }
         } catch (error) {
             console.error('Error loading readings:', error);
@@ -145,37 +156,46 @@ document.addEventListener('DOMContentLoaded', function() {
         hideLoadingState();
         hideError();
 
-        if (!readings || readings.length === 0) {
+        if (!Array.isArray(readings)) {
+            showError(`Invalid data format: expected array, got ${typeof readings}`);
+            return;
+        }
+
+        if (readings.length === 0) {
             readingsContainer.innerHTML = '<div class="no-readings">No sensor readings found.</div>';
             readingsContainer.style.display = 'block';
             return;
         }
 
-        const tableHTML = `
-            <table class="readings-table">
-                <thead>
-                    <tr>
-                        <th>Sensor ID</th>
-                        <th>Temperature (°C)</th>
-                        <th>Humidity (%)</th>
-                        <th>Timestamp</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${readings.map(reading => `
+        try {
+            const tableHTML = `
+                <table class="readings-table">
+                    <thead>
                         <tr>
-                            <td>${escapeHtml(reading.sensor_id)}</td>
-                            <td>${reading.temperature}°C</td>
-                            <td>${reading.humidity}%</td>
-                            <td>${formatTimestamp(reading.timestamp)}</td>
+                            <th>Sensor ID</th>
+                            <th>Temperature (°C)</th>
+                            <th>Humidity (%)</th>
+                            <th>Timestamp</th>
                         </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+                    </thead>
+                    <tbody>
+                        ${readings.map(reading => `
+                            <tr>
+                                <td>${escapeHtml(reading.sensorId || reading.sensor_id || 'N/A')}</td>
+                                <td>${reading.temperature || 'N/A'}°C</td>
+                                <td>${reading.humidity || 'N/A'}%</td>
+                                <td>${formatTimestamp(reading.timestamp)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
 
-        readingsContainer.innerHTML = tableHTML;
-        readingsContainer.style.display = 'block';
+            readingsContainer.innerHTML = tableHTML;
+            readingsContainer.style.display = 'block';
+        } catch (error) {
+            showError(`Error displaying readings: ${error.message}`);
+        }
     }
 
     /**
@@ -271,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 break;
 
-            case 'humidity':
+            case 'humidity': {
                 const humidity = parseFloat(value);
                 if (!value) {
                     errorMessage = 'Humidity is required';
@@ -284,8 +304,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     isValid = false;
                 }
                 break;
+            }
 
-            case 'temperature':
+            case 'temperature': {
                 const temperature = parseFloat(value);
                 if (!value) {
                     errorMessage = 'Temperature is required';
@@ -298,6 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     isValid = false;
                 }
                 break;
+            }
         }
 
         if (!isValid) {
@@ -314,14 +336,14 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function showInputError(input, message) {
         input.style.borderColor = '#e74c3c';
-        
+
         const errorDiv = document.createElement('div');
         errorDiv.className = 'field-error';
         errorDiv.textContent = message;
         errorDiv.style.color = '#e74c3c';
         errorDiv.style.fontSize = '12px';
         errorDiv.style.marginTop = '5px';
-        
+
         input.parentNode.appendChild(errorDiv);
     }
 
@@ -332,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function clearInputError(e) {
         const input = e.target;
         input.style.borderColor = '#e1e5e9';
-        
+
         const existingError = input.parentNode.querySelector('.field-error');
         if (existingError) {
             existingError.remove();

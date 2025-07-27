@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateForm() {
         const isUsernameValid = validateUsername();
         const isPasswordValid = validatePassword();
-        
+
         return isUsernameValid && isPasswordValid;
     }
 
@@ -55,17 +55,17 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function validateUsername() {
         const username = usernameInput.value.trim();
-        
+
         if (!username) {
             showFieldError(usernameInput, 'Username is required');
             return false;
         }
-        
+
         if (username.length < 3) {
             showFieldError(usernameInput, 'Username must be at least 3 characters');
             return false;
         }
-        
+
         clearFieldError(usernameInput);
         return true;
     }
@@ -76,17 +76,17 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function validatePassword() {
         const password = passwordInput.value;
-        
+
         if (!password) {
             showFieldError(passwordInput, 'Password is required');
             return false;
         }
-        
+
         if (password.length < 6) {
             showFieldError(passwordInput, 'Password must be at least 6 characters');
             return false;
         }
-        
+
         clearFieldError(passwordInput);
         return true;
     }
@@ -98,16 +98,16 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function showFieldError(field, message) {
         clearFieldError(field);
-        
+
         field.style.borderColor = '#e74c3c';
-        
+
         const errorDiv = document.createElement('div');
         errorDiv.className = 'field-error';
         errorDiv.textContent = message;
         errorDiv.style.color = '#e74c3c';
         errorDiv.style.fontSize = '12px';
         errorDiv.style.marginTop = '5px';
-        
+
         field.parentNode.appendChild(errorDiv);
     }
 
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function clearFieldError(field) {
         field.style.borderColor = '#e1e5e9';
-        
+
         const existingError = field.parentNode.querySelector('.field-error');
         if (existingError) {
             existingError.remove();
@@ -131,15 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
         loginBtn.disabled = true;
         loginBtn.classList.add('loading');
         loginBtn.textContent = 'Logging in...';
-    }
-
-    /**
-     * Hide loading state
-     */
-    function hideLoadingState() {
-        loginBtn.disabled = false;
-        loginBtn.classList.remove('loading');
-        loginBtn.textContent = 'Login';
     }
 
     // Auto-hide alerts after 5 seconds
