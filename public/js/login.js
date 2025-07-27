@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'same-origin', // Include cookies in the request
         body: JSON.stringify({ secret })
       });
 
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (response.ok && result.success) {
         // Login successful - redirect to dashboard
-        window.location.href = '/dashboard';
+        window.location.href = '/';
       } else {
         // Login failed - show error
         showLoginError(result.message || 'Login failed. Please check your credentials.');
