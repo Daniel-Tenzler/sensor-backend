@@ -7,7 +7,6 @@ const router = express.Router();
 
 /**
  * Frontend Dashboard Routes
- * All routes serve HTML responses and require authentication
  */
 
 // GET / - Serve main dashboard page (requires authentication)

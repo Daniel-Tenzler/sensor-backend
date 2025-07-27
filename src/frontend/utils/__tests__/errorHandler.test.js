@@ -11,7 +11,6 @@ import {
   FrontendValidationError,
   escapeHtml,
   generateErrorHTML,
-  generateMaintenanceHTML,
   logFrontendError,
   getErrorDetails
 } from '../errorHandler.js';
@@ -37,7 +36,7 @@ describe('Frontend Error Handler Utilities', () => {
   describe('FrontendError', () => {
     it('should create a FrontendError with default values', () => {
       const error = new FrontendError('Test error');
-      
+
       expect(error.name).toBe('FrontendError');
       expect(error.message).toBe('Test error');
       expect(error.type).toBe(FRONTEND_ERROR_TYPES.INTERNAL_ERROR);
@@ -49,12 +48,12 @@ describe('Frontend Error Handler Utilities', () => {
     it('should create a FrontendError with custom values', () => {
       const details = { field: 'test' };
       const error = new FrontendError(
-        'Custom error', 
-        FRONTEND_ERROR_TYPES.VALIDATION_ERROR, 
-        400, 
+        'Custom error',
+        FRONTEND_ERROR_TYPES.VALIDATION_ERROR,
+        400,
         details
       );
-      
+
       expect(error.message).toBe('Custom error');
       expect(error.type).toBe(FRONTEND_ERROR_TYPES.VALIDATION_ERROR);
       expect(error.statusCode).toBe(400);
@@ -65,7 +64,7 @@ describe('Frontend Error Handler Utilities', () => {
   describe('FrontendAuthError', () => {
     it('should create a FrontendAuthError with default message', () => {
       const error = new FrontendAuthError();
-      
+
       expect(error.name).toBe('FrontendAuthError');
       expect(error.message).toBe('Authentication required');
       expect(error.type).toBe(FRONTEND_ERROR_TYPES.AUTHENTICATION_REQUIRED);
@@ -74,7 +73,7 @@ describe('Frontend Error Handler Utilities', () => {
 
     it('should create a FrontendAuthError with custom message', () => {
       const error = new FrontendAuthError('Invalid session');
-      
+
       expect(error.message).toBe('Invalid session');
     });
   });
@@ -82,7 +81,7 @@ describe('Frontend Error Handler Utilities', () => {
   describe('FrontendNotFoundError', () => {
     it('should create a FrontendNotFoundError with default message', () => {
       const error = new FrontendNotFoundError();
-      
+
       expect(error.name).toBe('FrontendNotFoundError');
       expect(error.message).toBe('Page not found');
       expect(error.type).toBe(FRONTEND_ERROR_TYPES.PAGE_NOT_FOUND);
@@ -93,7 +92,7 @@ describe('Frontend Error Handler Utilities', () => {
   describe('FrontendValidationError', () => {
     it('should create a FrontendValidationError with correct properties', () => {
       const error = new FrontendValidationError('Invalid input');
-      
+
       expect(error.name).toBe('FrontendValidationError');
       expect(error.message).toBe('Invalid input');
       expect(error.type).toBe(FRONTEND_ERROR_TYPES.VALIDATION_ERROR);
@@ -103,7 +102,7 @@ describe('Frontend Error Handler Utilities', () => {
     it('should include details when provided', () => {
       const details = { field: 'email', reason: 'invalid format' };
       const error = new FrontendValidationError('Invalid email', details);
-      
+
       expect(error.details).toBe(details);
     });
   });
@@ -112,7 +111,7 @@ describe('Frontend Error Handler Utilities', () => {
     it('should escape HTML special characters', () => {
       const input = '<script>alert("xss")</script>';
       const expected = '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;';
-      
+
       expect(escapeHtml(input)).toBe(expected);
     });
 
@@ -125,7 +124,7 @@ describe('Frontend Error Handler Utilities', () => {
     it('should escape all dangerous characters', () => {
       const input = '&<>"\'';
       const expected = '&amp;&lt;&gt;&quot;&#039;';
-      
+
       expect(escapeHtml(input)).toBe(expected);
     });
   });
@@ -133,7 +132,7 @@ describe('Frontend Error Handler Utilities', () => {
   describe('generateErrorHTML', () => {
     it('should generate basic error HTML', () => {
       const html = generateErrorHTML('Test Error', 'Test message', 500);
-      
+
       expect(html).toContain('Test Error');
       expect(html).toContain('Test message');
       expect(html).toContain('Error Code: 500');
@@ -148,9 +147,9 @@ describe('Frontend Error Handler Utilities', () => {
         customActions: [{ url: '/test', text: 'Test Action', class: 'btn-test' }],
         additionalInfo: 'Additional details'
       };
-      
+
       const html = generateErrorHTML('Test Error', 'Test message', 404, options);
-      
+
       expect(html).toContain('Go to Login');
       expect(html).toContain('Test Action');
       expect(html).toContain('Additional details');
@@ -161,14 +160,17 @@ describe('Frontend Error Handler Utilities', () => {
     it('should apply correct error class based on status code', () => {
       const serverErrorHtml = generateErrorHTML('Server Error', 'Message', 500);
       const clientErrorHtml = generateErrorHTML('Client Error', 'Message', 400);
-      
+
       expect(serverErrorHtml).toContain('server-error');
       expect(clientErrorHtml).toContain('client-error');
     });
 
     it('should escape HTML in title and message', () => {
-      const html = generateErrorHTML('<script>alert("xss")</script>', '<img src=x onerror=alert(1)>');
-      
+      const html = generateErrorHTML(
+        '<script>alert("xss")</script>',
+        '<img src=x onerror=alert(1)>'
+      );
+
       expect(html).not.toContain('<script>');
       expect(html).not.toContain('<img');
       expect(html).toContain('&lt;script&gt;');
@@ -176,37 +178,12 @@ describe('Frontend Error Handler Utilities', () => {
     });
   });
 
-  describe('generateMaintenanceHTML', () => {
-    it('should generate maintenance HTML with default message', () => {
-      const html = generateMaintenanceHTML();
-      
-      expect(html).toContain('System is under maintenance');
-      expect(html).toContain('System Maintenance');
-      expect(html).toContain('refresh');
-    });
-
-    it('should include estimated end time when provided', () => {
-      const endTime = new Date('2024-01-01T12:00:00Z');
-      const html = generateMaintenanceHTML('Custom message', endTime);
-      
-      expect(html).toContain('Custom message');
-      expect(html).toContain('Estimated completion');
-    });
-
-    it('should include auto-refresh meta tag', () => {
-      const html = generateMaintenanceHTML();
-      
-      expect(html).toContain('http-equiv="refresh"');
-      expect(html).toContain('content="300"');
-    });
-  });
-
   describe('logFrontendError', () => {
     it('should log error with basic information', () => {
       const error = new FrontendError('Test error');
-      
+
       logFrontendError(error);
-      
+
       expect(console.error).toHaveBeenCalledWith(
         'Frontend Error:',
         expect.stringContaining('Test error')
@@ -223,20 +200,17 @@ describe('Frontend Error Handler Utilities', () => {
         user: { id: 'user123' },
         sessionID: 'session123'
       };
-      
+
       logFrontendError(error, req, { additional: 'context' });
-      
-      expect(console.error).toHaveBeenCalledWith(
-        'Frontend Error:',
-        expect.stringContaining('GET')
-      );
+
+      expect(console.error).toHaveBeenCalledWith('Frontend Error:', expect.stringContaining('GET'));
     });
   });
 
   describe('getErrorDetails', () => {
     it('should return correct details for authentication error', () => {
       const details = getErrorDetails(FRONTEND_ERROR_TYPES.AUTHENTICATION_REQUIRED);
-      
+
       expect(details.title).toBe('Authentication Required');
       expect(details.statusCode).toBe(401);
       expect(details.showLoginButton).toBe(true);
@@ -245,42 +219,42 @@ describe('Frontend Error Handler Utilities', () => {
 
     it('should return correct details for not found error', () => {
       const details = getErrorDetails(FRONTEND_ERROR_TYPES.PAGE_NOT_FOUND);
-      
+
       expect(details.title).toBe('Page Not Found');
       expect(details.statusCode).toBe(404);
     });
 
     it('should return correct details for validation error', () => {
       const details = getErrorDetails(FRONTEND_ERROR_TYPES.VALIDATION_ERROR);
-      
+
       expect(details.title).toBe('Invalid Input');
       expect(details.statusCode).toBe(400);
     });
 
     it('should return correct details for internal error', () => {
       const details = getErrorDetails(FRONTEND_ERROR_TYPES.INTERNAL_ERROR);
-      
+
       expect(details.title).toBe('Internal Server Error');
       expect(details.statusCode).toBe(500);
     });
 
     it('should return default error details for unknown error type', () => {
       const details = getErrorDetails('UNKNOWN_ERROR_TYPE');
-      
+
       expect(details.title).toBe('Internal Server Error');
       expect(details.statusCode).toBe(500);
     });
 
     it('should return correct details for service unavailable error', () => {
       const details = getErrorDetails(FRONTEND_ERROR_TYPES.SERVICE_UNAVAILABLE);
-      
+
       expect(details.title).toBe('Service Unavailable');
       expect(details.statusCode).toBe(503);
     });
 
     it('should return correct details for session expired error', () => {
       const details = getErrorDetails(FRONTEND_ERROR_TYPES.SESSION_EXPIRED);
-      
+
       expect(details.title).toBe('Session Expired');
       expect(details.statusCode).toBe(401);
       expect(details.showLoginButton).toBe(true);

@@ -7,7 +7,6 @@ import {
   asyncHandler,
   frontendErrorHandler,
   frontendNotFoundHandler,
-  maintenanceHandler,
   handleAuthenticationError,
   validateSession,
   rateLimitErrorHandler,
@@ -198,7 +197,7 @@ describe('Frontend Error Handler Middleware', () => {
       frontendErrorHandler(error, req, res, next);
 
       expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Test error'));
-      
+
       // Reset NODE_ENV
       delete process.env.NODE_ENV;
     });
@@ -208,10 +207,7 @@ describe('Frontend Error Handler Middleware', () => {
 
       frontendErrorHandler(error, req, res, next);
 
-      expect(console.error).toHaveBeenCalledWith(
-        'Frontend Error:',
-        expect.any(String)
-      );
+      expect(console.error).toHaveBeenCalledWith('Frontend Error:', expect.any(String));
     });
   });
 
@@ -228,30 +224,6 @@ describe('Frontend Error Handler Middleware', () => {
     });
   });
 
-  describe('maintenanceHandler', () => {
-    it('should return maintenance page with custom message', () => {
-      const message = 'System under maintenance';
-      const handler = maintenanceHandler(message);
-
-      handler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(503);
-      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/html; charset=utf-8');
-      expect(res.setHeader).toHaveBeenCalledWith('Retry-After', '300');
-      expect(res.send).toHaveBeenCalledWith(expect.stringContaining(message));
-    });
-
-    it('should include estimated end time when provided', () => {
-      const message = 'Maintenance in progress';
-      const endTime = new Date('2024-01-01T12:00:00Z');
-      const handler = maintenanceHandler(message, endTime);
-
-      handler(req, res);
-
-      expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Estimated completion'));
-    });
-  });
-
   describe('handleAuthenticationError', () => {
     it('should redirect to login for regular requests', () => {
       handleAuthenticationError(req, res, 'Custom auth message');
@@ -259,9 +231,7 @@ describe('Frontend Error Handler Middleware', () => {
       expect(res.redirect).toHaveBeenCalledWith(
         expect.stringContaining('/login?error=auth_required')
       );
-      expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('returnUrl=%2Ftest')
-      );
+      expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('returnUrl=%2Ftest'));
     });
 
     it('should return JSON for AJAX requests', () => {
@@ -311,9 +281,7 @@ describe('Frontend Error Handler Middleware', () => {
 
       await middleware(req, res, next);
 
-      expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('/login')
-      );
+      expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/login'));
     });
 
     it('should handle validation errors', async () => {
@@ -322,9 +290,7 @@ describe('Frontend Error Handler Middleware', () => {
 
       await middleware(req, res, next);
 
-      expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('/login')
-      );
+      expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/login'));
       expect(console.error).toHaveBeenCalled();
     });
   });

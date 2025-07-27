@@ -11,20 +11,20 @@ export const FRONTEND_ERROR_TYPES = {
   AUTHENTICATION_REQUIRED: 'AUTHENTICATION_REQUIRED',
   ACCESS_FORBIDDEN: 'ACCESS_FORBIDDEN',
   SESSION_EXPIRED: 'SESSION_EXPIRED',
-  
+
   // Validation
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INVALID_INPUT: 'INVALID_INPUT',
-  
+
   // Resources
   NOT_FOUND: 'NOT_FOUND',
   PAGE_NOT_FOUND: 'PAGE_NOT_FOUND',
-  
+
   // Server
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   DATABASE_ERROR: 'DATABASE_ERROR',
-  
+
   // Network
   NETWORK_ERROR: 'NETWORK_ERROR',
   TIMEOUT_ERROR: 'TIMEOUT_ERROR'
@@ -34,14 +34,19 @@ export const FRONTEND_ERROR_TYPES = {
  * Custom Frontend Error class
  */
 export class FrontendError extends Error {
-  constructor(message, type = FRONTEND_ERROR_TYPES.INTERNAL_ERROR, statusCode = 500, details = null) {
+  constructor(
+    message,
+    type = FRONTEND_ERROR_TYPES.INTERNAL_ERROR,
+    statusCode = 500,
+    details = null
+  ) {
     super(message);
     this.name = 'FrontendError';
     this.type = type;
     this.statusCode = statusCode;
     this.details = details;
     this.timestamp = new Date().toISOString();
-    
+
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, FrontendError);
     }
@@ -110,24 +115,29 @@ export const generateErrorHTML = (title, message, statusCode = 500, options = {}
     additionalInfo = null
   } = options;
 
-  const backButton = showBackButton ? 
-    '<button onclick="history.back()" class="btn btn-secondary">Go Back</button>' : '';
-  
-  const homeButton = showHomeButton ? 
-    '<a href="/" class="btn btn-secondary">Go to Dashboard</a>' : '';
-  
-  const loginButton = showLoginButton ? 
-    '<a href="/login" class="btn">Go to Login</a>' : '';
-  
-  const customActionsHTML = customActions.map(action => 
-    `<a href="${escapeHtml(action.url)}" class="btn ${action.class || ''}">${escapeHtml(action.text)}</a>`
-  ).join('');
+  const backButton = showBackButton
+    ? '<button onclick="history.back()" class="btn btn-secondary">Go Back</button>'
+    : '';
 
-  const additionalInfoHTML = additionalInfo ? 
-    `<div class="error-details">${escapeHtml(additionalInfo)}</div>` : '';
+  const homeButton = showHomeButton
+    ? '<a href="/" class="btn btn-secondary">Go to Dashboard</a>'
+    : '';
 
-  const errorClass = statusCode >= 500 ? 'server-error' : 
-                    statusCode >= 400 ? 'client-error' : 'general-error';
+  const loginButton = showLoginButton ? '<a href="/login" class="btn">Go to Login</a>' : '';
+
+  const customActionsHTML = customActions
+    .map(
+      (action) =>
+        `<a href="${escapeHtml(action.url)}" class="btn ${action.class || ''}">${escapeHtml(action.text)}</a>`
+    )
+    .join('');
+
+  const additionalInfoHTML = additionalInfo
+    ? `<div class="error-details">${escapeHtml(additionalInfo)}</div>`
+    : '';
+
+  const errorClass =
+    statusCode >= 500 ? 'server-error' : statusCode >= 400 ? 'client-error' : 'general-error';
 
   return `
 <!DOCTYPE html>
@@ -198,47 +208,6 @@ const getErrorIcon = (statusCode) => {
         <line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>`;
   }
-};
-
-/**
- * Generate maintenance page HTML
- * @param {string} message - Maintenance message
- * @param {Date} estimatedEnd - Estimated end time
- * @returns {string} HTML content
- */
-export const generateMaintenanceHTML = (message = 'System is under maintenance', estimatedEnd = null) => {
-  const estimatedEndHTML = estimatedEnd ? 
-    `<p class="maintenance-time">Estimated completion: ${estimatedEnd.toLocaleString()}</p>` : '';
-
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maintenance - Sensor Dashboard</title>
-    <link rel="stylesheet" href="/css/error.css">
-    <meta http-equiv="refresh" content="300">
-</head>
-<body>
-    <div class="error-container maintenance">
-        <div class="error-content">
-            <div class="error-icon">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                </svg>
-            </div>
-            <h1 class="error-title">System Maintenance</h1>
-            <p class="error-message">${escapeHtml(message)}</p>
-            ${estimatedEndHTML}
-            <div class="maintenance-info">
-                <p>We're working to improve your experience. Please check back shortly.</p>
-                <p>This page will automatically refresh every 5 minutes.</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`;
 };
 
 /**
@@ -348,7 +317,6 @@ export default {
   FrontendValidationError,
   escapeHtml,
   generateErrorHTML,
-  generateMaintenanceHTML,
   logFrontendError,
   getErrorDetails
 };

@@ -10,7 +10,6 @@ import {
   FrontendValidationError,
   FRONTEND_ERROR_TYPES,
   generateErrorHTML,
-  generateMaintenanceHTML,
   logFrontendError,
   getErrorDetails
 } from '../utils/errorHandler.js';
@@ -103,17 +102,12 @@ export const frontendErrorHandler = (err, req, res, next) => {
   }
 
   // Generate error HTML
-  const errorHTML = generateErrorHTML(
-    errorDetails.title,
-    errorDetails.message,
-    statusCode,
-    {
-      showBackButton: statusCode !== 401, // Don't show back button for auth errors
-      showHomeButton: errorDetails.showHomeButton !== false,
-      showLoginButton: errorDetails.showLoginButton === true,
-      additionalInfo: process.env.NODE_ENV === 'development' ? err.stack : null
-    }
-  );
+  const errorHTML = generateErrorHTML(errorDetails.title, errorDetails.message, statusCode, {
+    showBackButton: statusCode !== 401, // Don't show back button for auth errors
+    showHomeButton: errorDetails.showHomeButton !== false,
+    showLoginButton: errorDetails.showLoginButton === true,
+    additionalInfo: process.env.NODE_ENV === 'development' ? err.stack : null
+  });
 
   // Set appropriate headers
   res.status(statusCode);
@@ -128,7 +122,7 @@ export const frontendErrorHandler = (err, req, res, next) => {
  */
 export const frontendNotFoundHandler = (req, res) => {
   const errorDetails = getErrorDetails(FRONTEND_ERROR_TYPES.PAGE_NOT_FOUND);
-  
+
   const errorHTML = generateErrorHTML(
     errorDetails.title,
     `The page "${req.path}" was not found.`,
@@ -143,23 +137,6 @@ export const frontendNotFoundHandler = (req, res) => {
   res.status(404);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(errorHTML);
-};
-
-/**
- * Maintenance mode handler
- * @param {string} message - Maintenance message
- * @param {Date} estimatedEnd - Estimated end time
- * @returns {Function} Express middleware function
- */
-export const maintenanceHandler = (message, estimatedEnd = null) => {
-  return (req, res) => {
-    const maintenanceHTML = generateMaintenanceHTML(message, estimatedEnd);
-    
-    res.status(503);
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Retry-After', '300'); // Retry after 5 minutes
-    res.send(maintenanceHTML);
-  };
 };
 
 /**
@@ -196,11 +173,15 @@ export const validateSession = (sessionValidator) => {
   return async (req, res, next) => {
     try {
       const isValid = await sessionValidator(req);
-      
+
       if (!isValid) {
-        return handleAuthenticationError(req, res, 'Your session has expired. Please log in again.');
+        return handleAuthenticationError(
+          req,
+          res,
+          'Your session has expired. Please log in again.'
+        );
       }
-      
+
       next();
     } catch (error) {
       logFrontendError(error, req, { middleware: 'validateSession' });
@@ -223,9 +204,7 @@ export const rateLimitErrorHandler = (req, res) => {
       showBackButton: true,
       showHomeButton: true,
       showLoginButton: false,
-      customActions: [
-        { url: 'javascript:location.reload()', text: 'Retry', class: 'btn-primary' }
-      ]
+      customActions: [{ url: 'javascript:location.reload()', text: 'Retry', class: 'btn-primary' }]
     }
   );
 
@@ -283,7 +262,7 @@ export const healthCheckErrorHandler = (err, req, res, next) => {
 
     return res.status(503).send(errorHTML);
   }
-  
+
   next(err);
 };
 
@@ -305,7 +284,7 @@ export const monitorFrontendError = (error, req) => {
       userId: req?.user?.id,
       timestamp: new Date().toISOString()
     });
-    
+
     // In a real application, you would send this to a monitoring service
     // monitoringService.captureException(error, {
     //   user: req.user,
@@ -320,7 +299,6 @@ export default {
   asyncHandler,
   frontendErrorHandler,
   frontendNotFoundHandler,
-  maintenanceHandler,
   handleAuthenticationError,
   validateSession,
   rateLimitErrorHandler,

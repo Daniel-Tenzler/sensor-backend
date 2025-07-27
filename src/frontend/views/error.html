@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}} - Sensor Dashboard</title>
     <link rel="stylesheet" href="/css/error.css">
 </head>
+
 <body>
     <div class="error-container {{errorClass}}">
         <div class="error-content">
@@ -24,17 +26,10 @@
             {{/if}}
             <div class="error-actions">
                 {{#if showLoginButton}}
-                <a href="/login{{#if returnUrl}}?returnUrl={{returnUrl}}{{/if}}" class="btn btn-primary">Go to Login</a>
-                {{/if}}
-                {{#if showHomeButton}}
-                <a href="/" class="btn btn-secondary">Go to Dashboard</a>
-                {{/if}}
-                {{#if showBackButton}}
-                <button onclick="history.back()" class="btn btn-secondary">Go Back</button>
-                {{/if}}
-                {{#each customActions}}
-                <a href="{{url}}" class="btn {{class}}">{{text}}</a>
-                {{/each}}
+                <a href="/login{{#if returnUrl}}?returnUrl={{returnUrl}}{{/if}}" class="btn btn-primary">Go to Login</a> {{/if}} {{#if showHomeButton}}
+                <a href="/" class="btn btn-secondary">Go to Dashboard</a> {{/if}} {{#if showBackButton}}
+                <button onclick="history.back()" class="btn btn-secondary">Go Back</button> {{/if}} {{#each customActions}}
+                <a href="{{url}}" class="btn {{class}}">{{text}}</a> {{/each}}
             </div>
             <div class="error-meta">
                 <p>Error Code: {{statusCode}}</p>
@@ -45,27 +40,6 @@
             </div>
         </div>
     </div>
-    
-    <script>
-        // Auto-refresh for certain error types
-        {{#if autoRefresh}}
-        setTimeout(() => {
-            window.location.reload();
-        }, {{autoRefresh}} * 1000);
-        {{/if}}
-        
-        // Report error to monitoring (if enabled)
-        {{#if enableErrorReporting}}
-        if (window.errorReporting) {
-            window.errorReporting.report({
-                title: '{{title}}',
-                message: '{{message}}',
-                statusCode: {{statusCode}},
-                url: window.location.href,
-                timestamp: '{{timestamp}}'
-            });
-        }
-        {{/if}}
-    </script>
 </body>
+
 </html>

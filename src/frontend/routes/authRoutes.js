@@ -7,7 +7,6 @@ const router = express.Router();
 
 /**
  * Frontend Authentication Routes
- * All routes serve HTML responses
  */
 
 // GET /login - Serve login form (redirect if already authenticated)
