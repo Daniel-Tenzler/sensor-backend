@@ -176,4 +176,8 @@ class SessionManager {
 
 // Export singleton instance
 const sessionManager = new SessionManager();
+
+// Export the session configuration for use in app.js
+export const sessionConfig = sessionManager.getSessionConfig();
+
 export default sessionManager;

@@ -1,7 +1,6 @@
 import { Pool } from 'pg';
 
 const pool = new Pool({
-    // eslint-disable-next-line no-undef
     connectionString: process.env.DATABASE_URL, // Set this in Render
     ssl: { rejectUnauthorized: false } // Required for Supabase
 });
