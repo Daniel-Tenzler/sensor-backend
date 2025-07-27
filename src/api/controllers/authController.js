@@ -4,6 +4,7 @@ import {
   AuthenticationError, 
   DatabaseError 
 } from '../utils/errorHandler.js';
+import { sessionConfig } from '../../config/session.js';
 
 
 /**
@@ -38,9 +39,8 @@ export const login = async (req, res) => {
     // Validate input
     validateLoginInput(secret);
 
-    // For now, we'll use a simple hardcoded authentication
-    // In a real application, this would validate against a user database
-    if (!secret || secret.trim() === '') {
+    // Validate secret against SESSION_SECRET from environment
+    if (secret.trim() !== sessionConfig.secret) {
       throw new AuthenticationError('Invalid credentials provided');
     }
 
