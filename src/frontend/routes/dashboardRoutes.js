@@ -1,6 +1,7 @@
 import express from 'express';
 import dashboardController from '../controllers/dashboardController.js';
-import { requireFrontendAuth, frontendErrorHandler } from '../middleware/frontendAuth.js';
+import { requireFrontendAuth } from '../middleware/frontendAuth.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -10,9 +11,6 @@ const router = express.Router();
  */
 
 // GET / - Serve main dashboard page (requires authentication)
-router.get('/', requireFrontendAuth, dashboardController.getDashboard);
-
-// Apply frontend error handler to all dashboard routes
-router.use(frontendErrorHandler);
+router.get('/', requireFrontendAuth, asyncHandler(dashboardController.getDashboard));
 
 export default router;

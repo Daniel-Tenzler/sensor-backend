@@ -1,4 +1,10 @@
 import sessionManager from '../../shared/middleware/sessionManager.js';
+import {
+    FrontendError,
+    FrontendAuthError,
+    FRONTEND_ERROR_TYPES,
+    escapeHtml
+} from '../utils/errorHandler.js';
 
 /**
  * Generate dashboard HTML page
@@ -6,7 +12,7 @@ import sessionManager from '../../shared/middleware/sessionManager.js';
  * @returns {string} HTML content
  */
 function generateDashboardHTML(userId) {
-  return `
+    return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -101,79 +107,38 @@ function generateDashboardHTML(userId) {
 }
 
 /**
- * Generate error HTML page
- * @param {string} title - Error title
- * @param {string} message - Error message
- * @returns {string} HTML content
- */
-function generateErrorHTML(title, message) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error - Sensor Dashboard</title>
-    <link rel="stylesheet" href="/css/error.css">
-</head>
-<body>
-    <div class="error-container">
-        <div class="error-content">
-            <h1>${escapeHtml(title)}</h1>
-            <p>${escapeHtml(message)}</p>
-            <div class="error-actions">
-                <a href="/login" class="btn">Go to Login</a>
-                <a href="/" class="btn btn-secondary">Try Again</a>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`;
-}
-
-/**
- * Escape HTML to prevent XSS
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
- */
-function escapeHtml(text) {
-  if (!text) return '';
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-/**
  * Dashboard Frontend Controller
  * Handles serving the sensor readings dashboard HTML page
  */
 class DashboardController {
-  /**
-   * Serve the main dashboard page
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  async getDashboard(req, res) {
-    try {
-      // Ensure user is authenticated (middleware should handle this, but double-check)
-      if (!sessionManager.isAuthenticated(req)) {
-        return res.redirect('/login');
-      }
+    /**
+     * Serve the main dashboard page
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     */
+    async getDashboard(req, res) {
+        try {
+            // Ensure user is authenticated (middleware should handle this, but double-check)
+            if (!sessionManager.isAuthenticated(req)) {
+                throw new FrontendAuthError('Authentication required to access dashboard');
+            }
 
-      const userId = sessionManager.getUserId(req);
-      
-      // Serve dashboard HTML page
-      const dashboardHTML = generateDashboardHTML(userId);
-      res.setHeader('Content-Type', 'text/html');
-      res.send(dashboardHTML);
-    } catch (error) {
-      console.error('Error serving dashboard:', error);
-      res.status(500).send(generateErrorHTML('Internal Server Error', 'Unable to load dashboard'));
+            const userId = sessionManager.getUserId(req);
+
+            // Serve dashboard HTML page
+            const dashboardHTML = generateDashboardHTML(userId);
+            res.setHeader('Content-Type', 'text/html');
+            res.send(dashboardHTML);
+        } catch (error) {
+            // Re-throw custom errors to be handled by error middleware
+            if (error instanceof FrontendAuthError) {
+                throw error;
+            }
+
+            // Wrap other errors
+            throw new FrontendError('Unable to load dashboard', FRONTEND_ERROR_TYPES.INTERNAL_ERROR, 500);
+        }
     }
-  }
 
 
 }

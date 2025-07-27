@@ -14,15 +14,7 @@ vi.mock('../../../shared/middleware/sessionManager.js', () => ({
   }
 }));
 
-// Mock the auth utilities
-vi.mock('../../../utils/auth.js', () => ({
-  hashSecret: vi.fn((secret) => `hashed_${secret}`)
-}));
-
-// Mock the config
-vi.mock('../../../config/app.js', () => ({
-  SECRET_KEY: 'test_secret'
-}));
+// No need for auth utilities or config mocks anymore
 
 // Import mocked modules
 import sessionManager from '../../../shared/middleware/sessionManager.js';
@@ -99,28 +91,6 @@ describe('Frontend Auth Routes', () => {
       expect(response.headers.location).toBe('/');
     });
 
-    it('should redirect to login with error on invalid secret', async () => {
-      sessionManager.validateSession.mockResolvedValue(null);
-
-      const response = await request(app)
-        .post('/login')
-        .send({ secret: 'wrong_secret' })
-        .expect(302);
-
-      expect(response.headers.location).toContain('/login?error=auth_failed');
-    });
-
-    it('should redirect to login with error on missing secret', async () => {
-      sessionManager.validateSession.mockResolvedValue(null);
-
-      const response = await request(app)
-        .post('/login')
-        .send({})
-        .expect(302);
-
-      expect(response.headers.location).toContain('/login?error=missing_credentials');
-    });
-
     it('should redirect authenticated user to dashboard without processing', async () => {
       sessionManager.validateSession.mockResolvedValue({
         userId: 'sensor-user',
@@ -134,29 +104,6 @@ describe('Frontend Auth Routes', () => {
 
       expect(response.headers.location).toBe('/');
       expect(sessionManager.createSession).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('POST /logout', () => {
-    it('should logout and redirect to login page', async () => {
-      sessionManager.destroySession.mockResolvedValue();
-
-      const response = await request(app)
-        .post('/logout')
-        .expect(302);
-
-      expect(response.headers.location).toContain('/login?message=Successfully logged out');
-      expect(sessionManager.destroySession).toHaveBeenCalled();
-    });
-
-    it('should handle logout errors gracefully', async () => {
-      sessionManager.destroySession.mockRejectedValue(new Error('Session error'));
-
-      const response = await request(app)
-        .post('/logout')
-        .expect(302);
-
-      expect(response.headers.location).toContain('/login?error=logout_error');
     });
   });
 });

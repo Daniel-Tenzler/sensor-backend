@@ -1,6 +1,7 @@
 import express from 'express';
 import frontendAuthController from '../controllers/authController.js';
-import { redirectIfAuthenticated, frontendErrorHandler } from '../middleware/frontendAuth.js';
+import { redirectIfAuthenticated } from '../middleware/frontendAuth.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -10,15 +11,12 @@ const router = express.Router();
  */
 
 // GET /login - Serve login form (redirect if already authenticated)
-router.get('/login', redirectIfAuthenticated, frontendAuthController.getLogin);
+router.get('/login', redirectIfAuthenticated, asyncHandler(frontendAuthController.getLogin));
 
 // POST /login - Process login form submission
-router.post('/login', redirectIfAuthenticated, frontendAuthController.processLogin);
+router.post('/login', redirectIfAuthenticated, asyncHandler(frontendAuthController.processLogin));
 
 // POST /logout - Handle logout and redirect
-router.post('/logout', frontendAuthController.logout);
-
-// Apply frontend error handler to all auth routes
-router.use(frontendErrorHandler);
+router.post('/logout', asyncHandler(frontendAuthController.logout));
 
 export default router;

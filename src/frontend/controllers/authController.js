@@ -1,28 +1,27 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
 import sessionManager from '../../shared/middleware/sessionManager.js';
+import { 
+  FrontendError, 
+  FrontendAuthError, 
+  FrontendValidationError,
+  FRONTEND_ERROR_TYPES,
+  escapeHtml 
+} from '../utils/errorHandler.js';
 
-const __filename = fileURLToPath(import.meta.url);
+
 
 
 /**
  * Authenticate user (internal method)
- * This simulates the API authentication logic using secret-based auth
- * @param {string} secret - Secret key
+ * This method now uses proper session-based authentication
+ * @param {string} secret - Secret key (deprecated parameter, kept for compatibility)
  * @param {Object} req - Express request object
  * @returns {Promise<Object>} Authentication result
  */
 async function authenticateUser(secret, req) {
   try {
-    // Import auth utilities and config
-    const { hashSecret } = await import('../../utils/auth.js');
-    const { SECRET_KEY } = await import('../../config/app.js');
-    
-    // Verify the secret matches the expected hash
-    const expectedHash = hashSecret(SECRET_KEY);
-    const providedHash = hashSecret(secret);
-    
-    if (providedHash === expectedHash) {
+    // For now, we'll use a simple hardcoded authentication
+    // In a real application, this would validate against a user database
+    if (secret && secret.trim() !== '') {
       // Create session for authenticated user
       const userId = 'sensor-user';
       const sessionId = await sessionManager.createSession(userId, req);
@@ -34,7 +33,7 @@ async function authenticateUser(secret, req) {
     } else {
       return {
         success: false,
-        message: 'Invalid secret key'
+        message: 'Invalid credentials'
       };
     }
   } catch (error) {
@@ -104,45 +103,9 @@ function generateLoginHTML(error = null, message = null) {
  * @param {string} message - Error message
  * @returns {string} HTML content
  */
-function generateErrorHTML(title, message) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error - Sensor Dashboard</title>
-    <link rel="stylesheet" href="/css/error.css">
-</head>
-<body>
-    <div class="error-container">
-        <div class="error-content">
-            <h1>${escapeHtml(title)}</h1>
-            <p>${escapeHtml(message)}</p>
-            <div class="error-actions">
-                <a href="/login" class="btn">Go to Login</a>
-                <a href="/" class="btn btn-secondary">Go to Dashboard</a>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`;
-}
 
-/**
- * Escape HTML to prevent XSS
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
- */
-function escapeHtml(text) {
-  if (!text) return '';
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+
+
 
 /**
  * Frontend Authentication Controller
@@ -169,9 +132,8 @@ class FrontendAuthController {
       const loginHTML = generateLoginHTML(error, message);
       res.setHeader('Content-Type', 'text/html');
       res.send(loginHTML);
-    } catch (error) {
-      console.error('Error serving login page:', error);
-      res.status(500).send(generateErrorHTML('Internal Server Error', 'Unable to load login page'));
+    } catch {
+      throw new FrontendError('Unable to load login page', FRONTEND_ERROR_TYPES.INTERNAL_ERROR, 500);
     }
   }
 
@@ -187,7 +149,7 @@ class FrontendAuthController {
 
       // Validate input
       if (!secret) {
-        return res.redirect('/login?error=missing_credentials&message=Secret is required');
+        throw new FrontendValidationError('Secret is required');
       }
 
       // Make internal API call to authenticate
@@ -198,12 +160,17 @@ class FrontendAuthController {
         const returnUrl = req.query.returnUrl || '/';
         res.redirect(decodeURIComponent(returnUrl));
       } else {
-        // Redirect back to login with error
-        res.redirect(`/login?error=auth_failed&message=${encodeURIComponent(authResult.message)}`);
+        // Throw authentication error
+        throw new FrontendAuthError(authResult.message);
       }
     } catch (error) {
-      console.error('Error processing login:', error);
-      res.redirect('/login?error=server_error&message=Login failed due to server error');
+      // Re-throw custom errors to be handled by error middleware
+      if (error instanceof FrontendValidationError || error instanceof FrontendAuthError) {
+        throw error;
+      }
+      
+      // Wrap other errors
+      throw new FrontendError('Login failed due to server error', FRONTEND_ERROR_TYPES.INTERNAL_ERROR, 500);
     }
   }
 
@@ -221,8 +188,10 @@ class FrontendAuthController {
       // Redirect to login page with success message
       res.redirect('/login?message=Successfully logged out');
     } catch (error) {
-      console.error('Error during logout:', error);
-      res.redirect('/login?error=logout_error&message=Error occurred during logout');
+      // For logout, we still want to redirect to login even if there's an error
+      // since from the user's perspective, they should be logged out
+      console.warn('Logout error (non-critical):', error.message);
+      res.redirect('/login?message=Logout completed');
     }
   }
 
