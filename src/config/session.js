@@ -16,8 +16,7 @@ export const sessionConfig = {
         // HTTP-only cookies prevent XSS attacks
         httpOnly: true,
 
-        // Secure cookies only sent over HTTPS in production
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,
 
         // Session duration: 24 hours
         maxAge: 24 * 60 * 60 * 1000,

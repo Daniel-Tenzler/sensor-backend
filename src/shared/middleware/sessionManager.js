@@ -4,7 +4,6 @@ import process from 'process';
 
 /**
  * SessionManager - Handles session creation, validation, and cleanup
- * Provides secure HTTP-only cookie-based session management
  */
 class SessionManager {
   constructor() {
@@ -22,7 +21,7 @@ class SessionManager {
       name: 'sensor.session',
       cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'strict'
       },
