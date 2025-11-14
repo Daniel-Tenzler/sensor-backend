@@ -21,7 +21,9 @@ class SessionManager {
       name: 'sensor.session',
       cookie: {
         httpOnly: true,
-        secure: true,
+        // Secure cookies only work over HTTPS
+        // In development (HTTP), set to false; in production (HTTPS), set to true
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'strict'
       },
@@ -51,7 +53,7 @@ class SessionManager {
       req.session.userId = userId;
       req.session.createdAt = new Date();
       req.session.isActive = true;
-      
+
       req.session.save((err) => {
         if (err) {
           reject(new Error(`Failed to create session: ${err.message}`));
@@ -78,7 +80,7 @@ class SessionManager {
       const now = new Date();
       const createdAt = new Date(req.session.createdAt);
       const maxAge = this.sessionConfig.cookie.maxAge;
-      
+
       if (now - createdAt > maxAge) {
         this.destroySession(req, null);
         resolve(null);

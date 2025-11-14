@@ -1,9 +1,9 @@
 import { insertSensorReading, getLatestReadings } from '../../services/sensorService.js';
-import { 
-  SensorError, 
-  ValidationError, 
+import {
+  SensorError,
+  ValidationError,
   DatabaseError,
-  NotFoundError,
+  NotFoundError
 } from '../utils/errorHandler.js';
 
 /**
@@ -22,34 +22,34 @@ const validateSensorReading = (sensorId, humidity, temperature) => {
   if (!sensorId || typeof sensorId !== 'string') {
     throw new ValidationError('Invalid sensor ID format', { field: 'sensorId', type: 'string' });
   }
-  
+
   if (sensorId.trim().length === 0) {
     throw new ValidationError('Sensor ID cannot be empty', { field: 'sensorId' });
   }
-  
+
   if (humidity === undefined || humidity === null) {
     throw new ValidationError('Humidity value is required', { field: 'humidity' });
   }
-  
+
   if (temperature === undefined || temperature === null) {
     throw new ValidationError('Temperature value is required', { field: 'temperature' });
   }
-  
+
   const humidityNum = Number(humidity);
   const temperatureNum = Number(temperature);
-  
+
   if (isNaN(humidityNum) || isNaN(temperatureNum)) {
-    throw new ValidationError('Sensor values must be valid numbers', { 
+    throw new ValidationError('Sensor values must be valid numbers', {
       fields: ['humidity', 'temperature'],
       provided: { humidity, temperature }
     });
   }
-  
+
   // Additional validation for reasonable ranges
   if (humidityNum < 0 || humidityNum > 100) {
     throw new SensorError('Humidity must be between 0 and 100', 400);
   }
-  
+
   if (temperatureNum < -50 || temperatureNum > 100) {
     throw new SensorError('Temperature must be between -50 and 100 degrees', 400);
   }
@@ -62,7 +62,9 @@ const validateSensorReading = (sensorId, humidity, temperature) => {
  */
 export const submitSensorReading = async (req, res) => {
   try {
-    const { sensorId, humidity, temperature } = req.body;
+    // Extract sensor data, ignoring 'secret' field if present (used for Bearer token auth)
+    const { sensorId, humidity, temperature, ...rest } = req.body;
+    console.log(rest);
 
     // Validate input
     validateSensorReading(sensorId, humidity, temperature);
@@ -90,7 +92,6 @@ export const submitSensorReading = async (req, res) => {
       },
       timestamp: new Date().toISOString()
     });
-
   } catch (error) {
     console.error('Sensor reading error:', {
       error: error.message,
@@ -112,13 +113,13 @@ export const getSensorReadingsAPI = async (req, res) => {
   try {
     // Get limit from query parameters, default to 100
     const limit = parseInt(req.query.limit) || 100;
-    
+
     // Validate limit
     if (limit < 1 || limit > 1000) {
-      throw new ValidationError('Limit must be between 1 and 1000', { 
-        field: 'limit', 
-        value: limit, 
-        range: { min: 1, max: 1000 } 
+      throw new ValidationError('Limit must be between 1 and 1000', {
+        field: 'limit',
+        value: limit,
+        range: { min: 1, max: 1000 }
       });
     }
 
@@ -130,7 +131,7 @@ export const getSensorReadingsAPI = async (req, res) => {
     }
 
     // Format the response
-    const formattedReadings = readings.map(reading => ({
+    const formattedReadings = readings.map((reading) => ({
       id: reading.id,
       sensorId: reading.sensor_id,
       humidity: reading.humidity,
@@ -148,7 +149,6 @@ export const getSensorReadingsAPI = async (req, res) => {
       },
       timestamp: new Date().toISOString()
     });
-
   } catch (error) {
     console.error('Error retrieving sensor readings:', {
       error: error.message,
@@ -178,7 +178,7 @@ export const getSensorStats = async (req, res) => {
     // Get readings for specific sensor
     const allReadings = await getLatestReadings(1000); // Get more for stats
     const sensorReadings = allReadings
-      .filter(reading => reading.sensor_id === sensorId)
+      .filter((reading) => reading.sensor_id === sensorId)
       .slice(0, limit);
 
     if (sensorReadings.length === 0) {
@@ -186,8 +186,8 @@ export const getSensorStats = async (req, res) => {
     }
 
     // Calculate statistics
-    const temperatures = sensorReadings.map(r => r.temperature);
-    const humidities = sensorReadings.map(r => r.humidity);
+    const temperatures = sensorReadings.map((r) => r.temperature);
+    const humidities = sensorReadings.map((r) => r.humidity);
 
     const stats = {
       sensorId: sensorId,
@@ -212,7 +212,6 @@ export const getSensorStats = async (req, res) => {
       data: stats,
       timestamp: new Date().toISOString()
     });
-
   } catch (error) {
     console.error('Error retrieving sensor statistics:', {
       error: error.message,
