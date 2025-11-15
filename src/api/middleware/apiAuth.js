@@ -1,6 +1,6 @@
 import sessionManager from '../../shared/middleware/sessionManager.js';
 import { AuthenticationError, DatabaseError } from '../utils/errorHandler.js';
-import { sessionConfig } from '../../config/session.js';
+import config from '../../config/index.js';
 
 /**
  * API Authentication Middleware
@@ -14,23 +14,80 @@ import { sessionConfig } from '../../config/session.js';
  * @returns {string|null} Bearer token or null
  */
 const extractBearerToken = (req) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7);
+  // Express normalizes headers to lowercase, but check both for robustness
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+
+  console.log('[Auth Debug] Checking Authorization header:', {
+    hasAuthHeader: !!authHeader,
+    authHeaderType: typeof authHeader,
+    authHeaderLength: authHeader ? authHeader.length : 0,
+    authHeaderPreview: authHeader ? authHeader.substring(0, 20) + '...' : null,
+    allAuthHeaders: Object.keys(req.headers).filter((k) => k.toLowerCase().includes('auth'))
+  });
+
+  if (authHeader && typeof authHeader === 'string') {
+    // Handle both "Bearer token" and "bearer token" (case-insensitive)
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch) {
+      const token = bearerMatch[1];
+      console.log('[Auth Debug] Bearer token extracted:', {
+        tokenLength: token.length,
+        tokenPreview: token.substring(0, 10) + '...',
+        tokenEnd: '...' + token.substring(token.length - 10)
+      });
+      return token;
+    } else {
+      console.log('[Auth Debug] Authorization header exists but does not match Bearer format');
+    }
   }
+  console.log('[Auth Debug] No Bearer token found in Authorization header');
   return null;
 };
 
 /**
- * Validate Bearer token against SESSION_SECRET
+ * Validate Bearer token against API_SECRET
  * @param {string} token - Bearer token to validate
  * @returns {boolean} True if token is valid
  */
 const validateBearerToken = (token) => {
+  console.log('[Auth Debug] Validating Bearer token:', {
+    hasToken: !!token,
+    tokenType: typeof token,
+    tokenLength: token ? token.length : 0
+  });
+
   if (!token || typeof token !== 'string') {
+    console.log('[Auth Debug] Token validation failed: token is missing or not a string');
     return false;
   }
-  return token.trim() === sessionConfig.secret;
+
+  // Ensure both token and secret are trimmed for comparison
+  const trimmedToken = token.trim();
+  const secret = String(config.API_SECRET || '').trim();
+
+  console.log('[Auth Debug] Token comparison:', {
+    tokenLength: trimmedToken.length,
+    secretLength: secret.length,
+    tokenPreview: trimmedToken.substring(0, 10) + '...',
+    secretPreview: secret.substring(0, 10) + '...',
+    lengthsMatch: trimmedToken.length === secret.length,
+    secretConfigured: !!config.API_SECRET && secret.length > 0
+  });
+
+  // If secret is not configured, reject all tokens
+  if (!secret || secret.length === 0) {
+    console.log('[Auth Debug] Token validation failed: API_SECRET is not configured');
+    return false;
+  }
+
+  // Simple string comparison (both are already trimmed)
+  const isValid = trimmedToken === secret;
+  console.log('[Auth Debug] Token validation result:', {
+    isValid,
+    matchDetails: isValid ? 'Tokens match' : 'Tokens do not match'
+  });
+
+  return isValid;
 };
 
 /**
@@ -41,28 +98,51 @@ const validateBearerToken = (token) => {
  * @param {Function} next - Express next function
  */
 export const authenticateAPI = async (req, res, next) => {
+  console.log('[Auth Debug] Starting authentication for:', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    ip: req.ip,
+    timestamp: new Date().toISOString()
+  });
+
   try {
     // First, try Bearer token authentication (for sensor devices)
     const bearerToken = extractBearerToken(req);
-    if (bearerToken && validateBearerToken(bearerToken)) {
-      // Bearer token is valid, authenticate as sensor-user
-      req.user = {
-        id: 'sensor-user',
-        sessionId: null,
-        authenticated: true,
-        authMethod: 'bearer'
-      };
-      return next();
+    if (bearerToken) {
+      console.log('[Auth Debug] Bearer token found, attempting validation');
+      const isValid = validateBearerToken(bearerToken);
+      if (isValid) {
+        console.log('[Auth Debug] Bearer token authentication successful');
+        // Bearer token is valid, authenticate as sensor-user
+        req.user = {
+          id: 'sensor-user',
+          sessionId: null,
+          authenticated: true,
+          authMethod: 'bearer'
+        };
+        return next();
+      }
+      // Bearer token was provided but is invalid - don't fall back to session
+      console.log('[Auth Debug] Bearer token authentication failed - token is invalid');
+      return next(new AuthenticationError('Invalid Bearer token provided'));
     }
 
+    console.log('[Auth Debug] No Bearer token found, falling back to session authentication');
     // Fall back to session-based authentication
     const sessionData = await sessionManager.validateSession(req);
 
     if (!sessionData) {
+      console.log('[Auth Debug] Session authentication failed - no valid session');
       return next(
         new AuthenticationError('Valid session or Bearer token required to access this resource')
       );
     }
+
+    console.log('[Auth Debug] Session authentication successful:', {
+      userId: sessionData.userId,
+      sessionId: sessionData.sessionId
+    });
 
     // Attach user context to request object
     req.user = {
@@ -74,6 +154,12 @@ export const authenticateAPI = async (req, res, next) => {
 
     next();
   } catch (error) {
+    console.error('[Auth Debug] Authentication error:', {
+      error: error.message,
+      stack: error.stack,
+      errorType: error.constructor.name
+    });
+
     if (error instanceof AuthenticationError) {
       return next(error);
     }
