@@ -17,24 +17,11 @@ const extractBearerToken = (req) => {
   // Express normalizes headers to lowercase, but check both for robustness
   const authHeader = req.headers.authorization || req.headers.Authorization;
 
-  console.log('[Auth Debug] Checking Authorization header:', {
-    hasAuthHeader: !!authHeader,
-    authHeaderType: typeof authHeader,
-    authHeaderLength: authHeader ? authHeader.length : 0,
-    authHeaderPreview: authHeader ? authHeader.substring(0, 20) + '...' : null,
-    allAuthHeaders: Object.keys(req.headers).filter((k) => k.toLowerCase().includes('auth'))
-  });
-
   if (authHeader && typeof authHeader === 'string') {
     // Handle both "Bearer token" and "bearer token" (case-insensitive)
     const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
     if (bearerMatch) {
       const token = bearerMatch[1];
-      console.log('[Auth Debug] Bearer token extracted:', {
-        tokenLength: token.length,
-        tokenPreview: token.substring(0, 10) + '...',
-        tokenEnd: '...' + token.substring(token.length - 10)
-      });
       return token;
     } else {
       // If no "Bearer " prefix, treat the entire header as the token
@@ -53,29 +40,13 @@ const extractBearerToken = (req) => {
  * @returns {boolean} True if token is valid
  */
 const validateBearerToken = (token) => {
-  console.log('[Auth Debug] Validating Bearer token:', {
-    hasToken: !!token,
-    tokenType: typeof token,
-    tokenLength: token ? token.length : 0
-  });
-
   if (!token || typeof token !== 'string') {
-    console.log('[Auth Debug] Token validation failed: token is missing or not a string');
     return false;
   }
 
   // Ensure both token and secret are trimmed for comparison
   const trimmedToken = token.trim();
   const secret = String(config.API_SECRET || '').trim();
-
-  console.log('[Auth Debug] Token comparison:', {
-    tokenLength: trimmedToken.length,
-    secretLength: secret.length,
-    tokenPreview: trimmedToken.substring(0, 10) + '...',
-    secretPreview: secret.substring(0, 10) + '...',
-    lengthsMatch: trimmedToken.length === secret.length,
-    secretConfigured: !!config.API_SECRET && secret.length > 0
-  });
 
   // If secret is not configured, reject all tokens
   if (!secret || secret.length === 0) {
@@ -85,11 +56,6 @@ const validateBearerToken = (token) => {
 
   // Simple string comparison (both are already trimmed)
   const isValid = trimmedToken === secret;
-  console.log('[Auth Debug] Token validation result:', {
-    isValid,
-    matchDetails: isValid ? 'Tokens match' : 'Tokens do not match'
-  });
-
   return isValid;
 };
 
@@ -101,14 +67,6 @@ const validateBearerToken = (token) => {
  * @param {Function} next - Express next function
  */
 export const authenticateAPI = async (req, res, next) => {
-  console.log('[Auth Debug] Starting authentication for:', {
-    method: req.method,
-    path: req.path,
-    url: req.url,
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
-
   try {
     // First, try Bearer token authentication (for sensor devices)
     const bearerToken = extractBearerToken(req);
@@ -141,11 +99,6 @@ export const authenticateAPI = async (req, res, next) => {
         new AuthenticationError('Valid session or Bearer token required to access this resource')
       );
     }
-
-    console.log('[Auth Debug] Session authentication successful:', {
-      userId: sessionData.userId,
-      sessionId: sessionData.sessionId
-    });
 
     // Attach user context to request object
     req.user = {

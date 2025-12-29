@@ -11,15 +11,6 @@ import { ValidationError } from '../utils/errorHandler.js';
 export const deflateDecompression = (req, res, next) => {
   const contentEncoding = req.headers['content-encoding'];
 
-  console.log('[Deflate Debug] Checking request for deflate compression:', {
-    method: req.method,
-    path: req.path,
-    contentEncoding: contentEncoding || 'none',
-    contentType: req.headers['content-type'],
-    contentLength: req.headers['content-length'],
-    hasBody: !!req.body
-  });
-
   // Only process if Content-Encoding is deflate (case-insensitive)
   if (!contentEncoding || contentEncoding.toLowerCase() !== 'deflate') {
     console.log('[Deflate Debug] Not a deflate request, skipping decompression');
@@ -30,24 +21,12 @@ export const deflateDecompression = (req, res, next) => {
 
   // Collect compressed data
   const chunks = [];
-  let totalSize = 0;
 
   req.on('data', (chunk) => {
     chunks.push(chunk);
-    totalSize += chunk.length;
-    console.log('[Deflate Debug] Received chunk:', {
-      chunkSize: chunk.length,
-      totalChunks: chunks.length,
-      totalSize: totalSize
-    });
   });
 
   req.on('end', () => {
-    console.log('[Deflate Debug] Request body received, starting decompression:', {
-      totalChunks: chunks.length,
-      totalSize: totalSize
-    });
-
     try {
       if (chunks.length === 0) {
         console.log('[Deflate Debug] Error: Empty compressed payload');
