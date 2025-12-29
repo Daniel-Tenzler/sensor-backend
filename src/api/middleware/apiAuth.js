@@ -37,7 +37,10 @@ const extractBearerToken = (req) => {
       });
       return token;
     } else {
-      console.log('[Auth Debug] Authorization header exists but does not match Bearer format');
+      // If no "Bearer " prefix, treat the entire header as the token
+      // This handles cases where the token is sent directly
+      console.log('[Auth Debug] No Bearer prefix found, treating entire header as token');
+      return authHeader.trim();
     }
   }
   console.log('[Auth Debug] No Bearer token found in Authorization header');
