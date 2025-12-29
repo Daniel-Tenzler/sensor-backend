@@ -1,15 +1,12 @@
 import sessionManager from '../../shared/middleware/sessionManager.js';
-import { 
-  FrontendError, 
-  FrontendAuthError, 
+import {
+  FrontendError,
+  FrontendAuthError,
   FrontendValidationError,
-  FRONTEND_ERROR_TYPES,
-  escapeHtml 
+  FRONTEND_ERROR_TYPES
 } from '../utils/errorHandler.js';
 import { sessionConfig } from '../../config/session.js';
-
-
-
+import viewRenderer from '../utils/viewRenderer.js';
 
 /**
  * Authenticate user (internal method)
@@ -46,66 +43,19 @@ async function authenticateUser(secret, req) {
 }
 
 /**
- * Generate login HTML page
+ * Generate login HTML page using view renderer
  * @param {string} error - Error type
  * @param {string} message - Error or success message
  * @returns {string} HTML content
  */
 function generateLoginHTML(error = null, message = null) {
-  const errorDisplay = error && message ? 
-    `<div class="alert alert-error">${escapeHtml(message)}</div>` : '';
-  
-  const successDisplay = !error && message ? 
-    `<div class="alert alert-success">${escapeHtml(message)}</div>` : '';
+  const viewData = {
+    error: error || undefined,
+    message: message || undefined
+  };
 
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sensor Dashboard</title>
-    <link rel="stylesheet" href="/css/login.css">
-</head>
-<body>
-    <div class="login-container">
-        <div class="login-form">
-            <h1>Sensor Dashboard</h1>
-            <h2>Login</h2>
-            
-            ${errorDisplay}
-            ${successDisplay}
-            
-            <form method="POST" action="/login" id="loginForm">
-                <div class="form-group">
-                    <label for="secret">Secret Key:</label>
-                    <input type="password" id="secret" name="secret" required 
-                           placeholder="Enter your secret key">
-                </div>
-                
-                <button type="submit" class="login-btn">Login</button>
-            </form>
-            
-            <div class="login-info">
-                <p>Enter your secret key to access the sensor dashboard</p>
-            </div>
-        </div>
-    </div>
-    
-    <script src="/js/login.js"></script>
-</body>
-</html>`;
+  return viewRenderer.render('login', viewData);
 }
-
-/**
- * Generate error HTML page
- * @param {string} title - Error title
- * @param {string} message - Error message
- * @returns {string} HTML content
- */
-
-
-
 
 /**
  * Frontend Authentication Controller
@@ -133,7 +83,11 @@ class FrontendAuthController {
       res.setHeader('Content-Type', 'text/html');
       res.send(loginHTML);
     } catch {
-      throw new FrontendError('Unable to load login page', FRONTEND_ERROR_TYPES.INTERNAL_ERROR, 500);
+      throw new FrontendError(
+        'Unable to load login page',
+        FRONTEND_ERROR_TYPES.INTERNAL_ERROR,
+        500
+      );
     }
   }
 
@@ -168,9 +122,13 @@ class FrontendAuthController {
       if (error instanceof FrontendValidationError || error instanceof FrontendAuthError) {
         throw error;
       }
-      
+
       // Wrap other errors
-      throw new FrontendError('Login failed due to server error', FRONTEND_ERROR_TYPES.INTERNAL_ERROR, 500);
+      throw new FrontendError(
+        'Login failed due to server error',
+        FRONTEND_ERROR_TYPES.INTERNAL_ERROR,
+        500
+      );
     }
   }
 
@@ -184,7 +142,7 @@ class FrontendAuthController {
     try {
       // Destroy the session
       await sessionManager.destroySession(req, res);
-      
+
       // Redirect to login page with success message
       res.redirect('/login?message=Successfully logged out');
     } catch (error) {
@@ -194,8 +152,6 @@ class FrontendAuthController {
       res.redirect('/login?message=Logout completed');
     }
   }
-
-
 }
 
 export default new FrontendAuthController();
