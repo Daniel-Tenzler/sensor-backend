@@ -1,0 +1,29 @@
+<section class="readings-section">
+  <div class="card">
+    <div class="readings-header">
+      <h2>Recent Sensor Readings</h2>
+      <div class="readings-controls">
+        <button id="refreshBtn" class="refresh-btn">Refresh</button>
+        <select id="limitSelect" class="limit-select">
+          <option value="10">Last 10</option>
+          <option value="25">Last 25</option>
+          <option value="50" selected>Last 50</option>
+          <option value="100">Last 100</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="loadingIndicator" class="loading-indicator">
+      <div class="spinner"></div>
+      <span>Loading readings...</span>
+    </div>
+
+    <div id="readingsContainer" class="readings-container">
+      <!-- Readings will be loaded here dynamically -->
+    </div>
+
+    <div id="errorMessage" class="error-message" style="display: none">
+      <!-- Error messages will appear here -->
+    </div>
+  </div>
+</section>

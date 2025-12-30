@@ -3,14 +3,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const config = {
-    // eslint-disable-next-line no-undef
-    PORT: process.env.PORT || 3000,
-    // eslint-disable-next-line no-undef
-    SECRET_KEY: process.env.SECRET_KEY
+  PORT: process.env.PORT || 3000,
+  API_SECRET: process.env.API_SECRET || 'your_shared_secret_here',
+  DATABASE_URL: process.env.DATABASE_URL
 };
-
-if (!config.SECRET_KEY) {
-    console.warn('Warning: SECRET_KEY is not set in environment variables');
-}
 
 export default config;

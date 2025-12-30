@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Sensor Dashboard</title>
+    <link rel="stylesheet" href="/css/login.css" />
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-form">
+        <h1>Sensor Dashboard</h1>
+        <h2>Login</h2>
+
+        {{#if error}} {{> error-alert}} {{/if}} {{#if message}} {{> success-alert}} {{/if}}
+        <form method="POST" action="/login" id="loginForm">
+          <div class="form-group">
+            <label for="secret">Secret Key:</label>
+            <input
+              type="password"
+              id="secret"
+              name="secret"
+              required
+              placeholder="Enter your secret key"
+            />
+          </div>
+
+          <button type="submit" class="login-btn">Login</button>
+        </form>
+
+        <div class="login-info">
+          <p>Enter your secret key to access the sensor dashboard</p>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/login.js"></script>
+  </body>
+</html>
